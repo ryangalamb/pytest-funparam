@@ -1,3 +1,6 @@
+import pytest
+
+
 def test_verifun_basic(testdir):
     """Simple test of the base functionality."""
 
@@ -63,7 +66,7 @@ def test_verifun_does_not_die_from_fixtures(testdir):
     }
 
 
-def test_verifun_names_default(testdir):
+def test_verifun_ids_default(testdir):
     testdir.makepyfile(
         r"""\
         def test_sum(verifun):
@@ -85,4 +88,32 @@ def test_verifun_names_default(testdir):
         "test_sum[0]",
         "test_sum[1]",
         "test_sum[2]",
+    ]
+
+
+@pytest.mark.skip(reason="WIP")
+def test_verifun_ids_override(testdir):
+    testdir.makepyfile(
+        r"""\
+        def test_sum(verifun):
+            def ids(a, b, expected):
+                return f"{a} + {b} == {expected}"
+
+            @verifun(ids=ids)
+            def verify_sum(a, b, expected):
+                assert a + b == expected
+
+            verify_sum(1, 2, 3)
+            verify_sum(2, 2, 4)
+            verify_sum(3, 10, 13)
+        """
+    )
+    items, _ = testdir.inline_genitems()
+
+    names = [item.name for item in items]
+    # Should use the ids function for identifiers.
+    assert names == [
+        "test_sum[1 + 2 == 3]",
+        "test_sum[2 + 2 == 4]",
+        "test_sum[3 + 10 == 13]",
     ]

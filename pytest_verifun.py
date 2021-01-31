@@ -3,7 +3,8 @@
 import pytest
 from unittest.mock import MagicMock
 from inspect import signature
-from functools import wraps
+from functools import wraps, partial
+from dataclasses import dataclass
 
 
 def pytest_generate_tests(metafunc):
@@ -28,28 +29,38 @@ def pytest_generate_tests(metafunc):
     test_function(**dry_run_kwargs)
 
     metafunc.parametrize(
-        "_callnum",
+        "_verifun_call_number",
         list(range(m_verify_function.call_count)),
     )
 
 
-@pytest.fixture
-def verifun(_callnum):
+@dataclass
+class Verifun:
 
-    current_call = 0
+    _verifun_call_number: int
+    current_call: int = 0
+    verify_function: callable = None
+    ids: callable = None
 
-    def verifun_decorator(verify_function):
-        nonlocal current_call
+    def __call__(self, verify_function=None, *, ids=None):
+        if verify_function is None:
+            return partial(self, ids=ids)
+
+        self.verify_function = verify_function
+        self.ids = ids
 
         @wraps(verify_function)
         def verifun_wrapper(*args, **kwargs):
-            nonlocal current_call
             try:
-                if current_call == _callnum:
-                    return verify_function(*args, **kwargs)
+                if self.current_call == self._verifun_call_number:
+                    return self.verify_function(*args, **kwargs)
             finally:
-                current_call += 1
+                self.current_call += 1
 
         return verifun_wrapper
 
-    return verifun_decorator
+
+@pytest.fixture
+def verifun(_verifun_call_number):
+
+    return Verifun(_verifun_call_number)
