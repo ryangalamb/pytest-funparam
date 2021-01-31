@@ -1,5 +1,5 @@
-def test_verifun_simple(testdir):
-    """Make sure that pytest accepts our fixture."""
+def test_verifun_basic(testdir):
+    """Simple test of the base functionality."""
 
     # create a temporary pytest test module
     testdir.makepyfile(
@@ -29,5 +29,35 @@ def test_verifun_simple(testdir):
     # Should have expanded the tests.
     assert result.parseoutcomes() == {
         "failed": 2,
+        "passed": 2,
+    }
+
+
+def test_verifun_does_not_die_from_fixtures(testdir):
+    testdir.makepyfile(
+        r"""\
+        def test_with_fixtures(capsys, verifun):
+
+            @verifun
+            def verify_with_fixtures(text):
+                print(text)
+                outerr = capsys.readouterr()
+                assert outerr.out.rstrip("\n") == text
+
+            verify_with_fixtures("foo")
+            # This one will fail!
+            verify_with_fixtures(3)
+            verify_with_fixtures("bar")
+        """
+    )
+
+    result = testdir.runpytest()
+
+    # Should have failed the test.
+    assert result.ret == 1
+
+    # Should have expanded the tests.
+    assert result.parseoutcomes() == {
+        "failed": 1,
         "passed": 2,
     }

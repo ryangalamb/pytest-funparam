@@ -2,6 +2,7 @@
 
 import pytest
 from unittest.mock import MagicMock
+from inspect import signature
 from functools import wraps
 
 
@@ -11,13 +12,20 @@ def pytest_generate_tests(metafunc):
         # Not interested in it, since our fixture isn't involved
         return
     m_verify_function = MagicMock()
-    m_verifun = MagicMock(
-        return_value=m_verify_function
-    )
 
+    test_function = metafunc.function
+
+    sig = signature(test_function)
     # Call the test function with dummy fixtures to see how many times the
     # verify function is called.
-    metafunc.function(verifun=m_verifun)
+    dry_run_kwargs = {
+        argname: MagicMock()
+        for argname in sig.parameters.keys()
+    }
+
+    dry_run_kwargs["verifun"].return_value = m_verify_function
+
+    test_function(**dry_run_kwargs)
 
     metafunc.parametrize(
         "_callnum",
