@@ -5,6 +5,36 @@ from unittest.mock import MagicMock
 from functools import wraps
 
 
+def grab_mock_fixture_value(fixture_def, verifun, name2fixturedefs):
+    if fixture_def.argname == "verifun":
+        return verifun
+    elif "verifun" in fixture_def.argnames:
+        kwargs = {
+            key: MagicMock()
+            for key in fixture_def.argnames
+        }
+        kwargs["verifun"] = verifun
+        return fixture_def.func(**kwargs)
+    for arg in fixture_def.argnames:
+        inner_fixture_def, *_ = name2fixturedefs.get(arg, [None])
+        if inner_fixture_def:
+            found = grab_mock_fixture_value(
+                inner_fixture_def,
+                verifun,
+                name2fixturedefs,
+            )
+        else:
+            found = None
+        if found is not None:
+            kwargs = {
+                key: MagicMock()
+                for key in fixture_def.argnames
+            }
+            kwargs[arg] = found
+            return fixture_def.func(**kwargs)
+    return None
+
+
 def generate_kwargs(definition, verifun):
     dry_run_kwargs = {}
     fixtureinfo = definition._fixtureinfo
@@ -13,17 +43,11 @@ def generate_kwargs(definition, verifun):
     name2fixturedefs = fixtureinfo.name2fixturedefs
     for name in sought_names:
         fixture_def, *_ = name2fixturedefs[name]
-        if name == "verifun":
-            dry_run_kwargs["verifun"] = verifun
-        elif "verifun" in fixture_def.argnames:
-            kwargs = {
-                key: MagicMock()
-                for key in fixture_def.argnames
-            }
-            kwargs["verifun"] = verifun
-            dry_run_kwargs[name] = fixture_def.func(**kwargs)
-        else:
+        found = grab_mock_fixture_value(fixture_def, verifun, name2fixturedefs)
+        if found is None:
             dry_run_kwargs[name] = MagicMock()
+        else:
+            dry_run_kwargs[name] = found
 
     return dry_run_kwargs
 

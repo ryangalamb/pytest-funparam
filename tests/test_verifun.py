@@ -143,3 +143,41 @@ def test_verifun_in_fixture(testdir):
         "failed": 1,
         "passed": 2,
     }
+
+
+def test_verifun_deep_in_fixture(testdir):
+    testdir.makepyfile(
+        r"""
+        import pytest
+
+        @pytest.fixture
+        def verify_sum(verifun):
+
+            @verifun
+            def verify_sum(a, b, c):
+                assert a + b == c
+
+            return verify_sum
+
+        @pytest.fixture
+        def verify_nested1(verify_sum):
+            return verify_sum
+
+        @pytest.fixture
+        def verify_nested(verify_nested1):
+            return verify_nested1
+
+        def test_foo(verify_nested):
+            verify_nested(1, 2, 3)
+            # This one fails
+            verify_nested(2, 2, 3)
+            verify_nested(2, 2, 4)
+        """
+    )
+    testdir.inline_run()
+    result = testdir.runpytest()
+
+    assert result.parseoutcomes() == {
+        "failed": 1,
+        "passed": 2,
+    }
