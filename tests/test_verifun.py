@@ -1,6 +1,3 @@
-import pytest
-
-
 def test_verifun_simple(testdir):
     """Make sure that pytest accepts our fixture."""
 
