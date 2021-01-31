@@ -1,21 +1,17 @@
 # -*- coding: utf-8 -*-
 
 import pytest
-
-
-def pytest_addoption(parser):
-    group = parser.getgroup('verifun')
-    group.addoption(
-        '--foo',
-        action='store',
-        dest='dest_foo',
-        default='2021',
-        help='Set the value for the fixture "bar".'
-    )
-
-    parser.addini('HELLO', 'Dummy pytest.ini setting')
+from functools import wraps
 
 
 @pytest.fixture
-def bar(request):
-    return request.config.option.dest_foo
+def verifun():
+    def verifun_decorator(verify_function):
+
+        @wraps(verify_function)
+        def verifun_wrapper(*args, **kwargs):
+            return verify_function(*args, **kwargs)
+
+        return verifun_wrapper
+
+    return verifun_decorator

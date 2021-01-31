@@ -1,64 +1,36 @@
-# -*- coding: utf-8 -*-
+import pytest
 
 
-def test_bar_fixture(testdir):
+def test_verifun_simple(testdir):
     """Make sure that pytest accepts our fixture."""
 
     # create a temporary pytest test module
-    testdir.makepyfile("""
-        def test_sth(bar):
-            assert bar == "europython2015"
-    """)
+    testdir.makepyfile(
+        """\
+        def test_foo(verifun):
+            @verifun
+            def verify_foo(a, b, c):
+                assert a + b == c
 
-    # run pytest with the following cmd args
-    result = testdir.runpytest(
-        '--foo=europython2015',
-        '-v'
+            verify_foo(1, 2, 3)
+
+            # This one will fail
+            verify_foo(2, 2, 3)
+
+            verify_foo(2, 2, 4)
+
+            # This one will fail
+            verify_foo(2, 2, 5)
+        """
     )
 
-    # fnmatch_lines does an assertion internally
-    result.stdout.fnmatch_lines([
-        '*::test_sth PASSED*',
-    ])
+    result = testdir.runpytest()
 
-    # make sure that that we get a '0' exit code for the testsuite
-    assert result.ret == 0
+    # Should have failed the test.
+    assert result.ret == 1
 
-
-def test_help_message(testdir):
-    result = testdir.runpytest(
-        '--help',
-    )
-    # fnmatch_lines does an assertion internally
-    result.stdout.fnmatch_lines([
-        'verifun:',
-        '*--foo=DEST_FOO*Set the value for the fixture "bar".',
-    ])
-
-
-def test_hello_ini_setting(testdir):
-    testdir.makeini("""
-        [pytest]
-        HELLO = world
-    """)
-
-    testdir.makepyfile("""
-        import pytest
-
-        @pytest.fixture
-        def hello(request):
-            return request.config.getini('HELLO')
-
-        def test_hello_world(hello):
-            assert hello == 'world'
-    """)
-
-    result = testdir.runpytest('-v')
-
-    # fnmatch_lines does an assertion internally
-    result.stdout.fnmatch_lines([
-        '*::test_hello_world PASSED*',
-    ])
-
-    # make sure that that we get a '0' exit code for the testsuite
-    assert result.ret == 0
+    # Should have expanded the tests.
+    assert result.parseoutcomes() == {
+        "failed": 2,
+        "passed": 2,
+    }
