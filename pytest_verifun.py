@@ -2,8 +2,30 @@
 
 import pytest
 from unittest.mock import MagicMock
-from inspect import signature
 from functools import wraps
+
+
+def generate_kwargs(definition, verifun):
+    dry_run_kwargs = {}
+    fixtureinfo = definition._fixtureinfo
+    sought_names = fixtureinfo.argnames
+
+    name2fixturedefs = fixtureinfo.name2fixturedefs
+    for name in sought_names:
+        fixture_def, *_ = name2fixturedefs[name]
+        if name == "verifun":
+            dry_run_kwargs["verifun"] = verifun
+        elif "verifun" in fixture_def.argnames:
+            kwargs = {
+                key: MagicMock()
+                for key in fixture_def.argnames
+            }
+            kwargs["verifun"] = verifun
+            dry_run_kwargs[name] = fixture_def.func(**kwargs)
+        else:
+            dry_run_kwargs[name] = MagicMock()
+
+    return dry_run_kwargs
 
 
 def pytest_generate_tests(metafunc):
@@ -12,19 +34,15 @@ def pytest_generate_tests(metafunc):
         # Not interested in it, since our fixture isn't involved
         return
 
-    test_function = metafunc.function
-
-    sig = signature(test_function)
-    # Call the test function with dummy fixtures to see how many times the
-    # verify function is called.
-    dry_run_kwargs = {
-        argname: MagicMock()
-        for argname in sig.parameters.keys()
-    }
-
     dry_run_verifun = GenerateTestsVerifun()
 
-    dry_run_kwargs["verifun"] = dry_run_verifun
+    # Can get FixtureDef from here?
+    dry_run_kwargs = generate_kwargs(metafunc.definition, dry_run_verifun)
+
+    test_function = metafunc.function
+
+    # Call the test function with dummy fixtures to see how many times the
+    # verify function is called.
 
     test_function(**dry_run_kwargs)
 

@@ -3,7 +3,7 @@ def test_verifun_basic(testdir):
 
     # create a temporary pytest test module
     testdir.makepyfile(
-        """\
+        """
         def test_foo(verifun):
             @verifun
             def verify_foo(a, b, c):
@@ -35,7 +35,7 @@ def test_verifun_basic(testdir):
 
 def test_verifun_does_not_die_from_fixtures(testdir):
     testdir.makepyfile(
-        r"""\
+        r"""
         def test_with_fixtures(capsys, verifun):
 
             @verifun
@@ -65,7 +65,7 @@ def test_verifun_does_not_die_from_fixtures(testdir):
 
 def test_verifun_ids_default(testdir):
     testdir.makepyfile(
-        r"""\
+        r"""
         def test_sum(verifun):
 
             @verifun
@@ -90,7 +90,7 @@ def test_verifun_ids_default(testdir):
 
 def test_verifun_ids_override(testdir):
     testdir.makepyfile(
-        r"""\
+        r"""
         def test_sum(verifun):
             def ids(a, b, expected):
                 return f"{a} + {b} == {expected}"
@@ -113,3 +113,33 @@ def test_verifun_ids_override(testdir):
         "test_sum[2 + 2 == 4]",
         "test_sum[3 + 10 == 13]",
     ]
+
+
+def test_verifun_in_fixture(testdir):
+    testdir.makepyfile(
+        r"""
+        import pytest
+
+        @pytest.fixture
+        def verify_sum(verifun):
+
+            @verifun
+            def verify_sum(a, b, c):
+                assert a + b == c
+
+            return verify_sum
+
+        def test_foo(verify_sum):
+            verify_sum(1, 2, 3)
+            # This one fails
+            verify_sum(2, 2, 3)
+            verify_sum(2, 2, 4)
+        """
+    )
+    testdir.inline_run()
+    result = testdir.runpytest()
+
+    assert result.parseoutcomes() == {
+        "failed": 1,
+        "passed": 2,
+    }
