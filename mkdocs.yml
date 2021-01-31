@@ -1,0 +1,10 @@
+site_name: pytest-verifun
+site_description: An alternative way to parametrize test cases
+site_author: Ryan J. Miller
+
+theme: readthedocs
+
+repo_url: https://github.com/rjmill/pytest-verifun
+
+pages:
+- Home: index.md
