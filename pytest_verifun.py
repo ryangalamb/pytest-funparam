@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 import pytest
 from unittest.mock import MagicMock
 from functools import wraps
@@ -89,7 +87,7 @@ class AbstractVerifun:
         self.verify_function = None
         self.ids = None
 
-    def call_verify_function(self, *args, **kwargs):
+    def call_verify_function(self, *args, **kwargs):  # pragma: no cover
         raise NotImplementedError()
 
     def __call__(self, verify_function=None, *, ids=None):

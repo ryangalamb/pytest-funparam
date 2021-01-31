@@ -1,0 +1,11 @@
+[run]
+omit =
+    env/*
+    */tests/*
+    /etc/python3.7/*
+    /nix/*
+    /run/user/*
+
+[report]
+show_missing = True
+skip_covered = True
