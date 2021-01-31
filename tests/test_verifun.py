@@ -1,6 +1,3 @@
-import pytest
-
-
 def test_verifun_basic(testdir):
     """Simple test of the base functionality."""
 
@@ -91,7 +88,6 @@ def test_verifun_ids_default(testdir):
     ]
 
 
-@pytest.mark.skip(reason="WIP")
 def test_verifun_ids_override(testdir):
     testdir.makepyfile(
         r"""\
