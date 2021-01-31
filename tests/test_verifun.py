@@ -61,3 +61,28 @@ def test_verifun_does_not_die_from_fixtures(testdir):
         "failed": 1,
         "passed": 2,
     }
+
+
+def test_verifun_names_default(testdir):
+    testdir.makepyfile(
+        r"""\
+        def test_sum(verifun):
+
+            @verifun
+            def verify_sum(a, b, expected):
+                assert a + b == expected
+
+            verify_sum(1, 2, 3)
+            verify_sum(2, 2, 4)
+            verify_sum(3, 10, 13)
+        """
+    )
+    items, _ = testdir.inline_genitems()
+
+    names = [item.name for item in items]
+    # Should generate numbered args.
+    assert names == [
+        "test_sum[0]",
+        "test_sum[1]",
+        "test_sum[2]",
+    ]
