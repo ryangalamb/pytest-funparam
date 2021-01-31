@@ -24,7 +24,7 @@ setup(
     long_description=read('README.rst'),
     py_modules=['pytest_verifun'],
     python_requires='>=3.7',
-    install_requires=['pytest>=6.0.1'],
+    install_requires=['pytest>=5.3.5'],
     classifiers=[
         'Development Status :: 4 - Beta',
         'Framework :: Pytest',
