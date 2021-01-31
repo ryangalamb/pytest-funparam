@@ -14,15 +14,16 @@ def grab_mock_fixture_value(fixture_def, verifun, name2fixturedefs):
         kwargs["verifun"] = verifun
         return fixture_def.func(**kwargs)
     for arg in fixture_def.argnames:
-        inner_fixture_def, *_ = name2fixturedefs.get(arg, [None])
-        if inner_fixture_def:
-            found = grab_mock_fixture_value(
-                inner_fixture_def,
-                verifun,
-                name2fixturedefs,
-            )
-        else:
-            found = None
+        try:
+            inner_fixture_def, *_ = name2fixturedefs[arg]
+        except KeyError:
+            # The fixture's not defined yet, so we probably don't care.
+            return None
+        found = grab_mock_fixture_value(
+            inner_fixture_def,
+            verifun,
+            name2fixturedefs,
+        )
         if found is not None:
             kwargs = {
                 key: MagicMock()
@@ -34,7 +35,7 @@ def grab_mock_fixture_value(fixture_def, verifun, name2fixturedefs):
 
 
 def generate_kwargs(definition, verifun):
-    dry_run_kwargs = {}
+    dryrun_kwargs = {}
     fixtureinfo = definition._fixtureinfo
     sought_names = fixtureinfo.argnames
 
@@ -43,11 +44,11 @@ def generate_kwargs(definition, verifun):
         fixture_def, *_ = name2fixturedefs[name]
         found = grab_mock_fixture_value(fixture_def, verifun, name2fixturedefs)
         if found is None:
-            dry_run_kwargs[name] = MagicMock()
+            dryrun_kwargs[name] = MagicMock()
         else:
-            dry_run_kwargs[name] = found
+            dryrun_kwargs[name] = found
 
-    return dry_run_kwargs
+    return dryrun_kwargs
 
 
 def pytest_generate_tests(metafunc):
@@ -56,21 +57,17 @@ def pytest_generate_tests(metafunc):
         # Not interested in it, since our fixture isn't involved
         return
 
-    dry_run_verifun = GenerateTestsVerifun()
-
-    # Can get FixtureDef from here?
-    dry_run_kwargs = generate_kwargs(metafunc.definition, dry_run_verifun)
-
-    test_function = metafunc.function
-
     # Call the test function with dummy fixtures to see how many times the
     # verify function is called.
+    dryrun_verifun = GenerateTestsVerifun()
 
-    test_function(**dry_run_kwargs)
+    kwargs = generate_kwargs(metafunc.definition, dryrun_verifun)
+
+    metafunc.function(**kwargs)
 
     metafunc.parametrize(
         "_verifun_call_number",
-        dry_run_verifun.generate_params()
+        dryrun_verifun.generate_params()
     )
 
 
