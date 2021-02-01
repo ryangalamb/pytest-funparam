@@ -1,5 +1,6 @@
 import pytest
 from textwrap import dedent
+import shlex
 
 
 TYPE_PYTHON = "python"
@@ -66,32 +67,32 @@ def extract_blocks(rst_text):
 
 
 @pytest.fixture
-def verify_one_example(testdir):
-    def verify_one_example(code, output):
-        # command_line = output.splitlines()[0]
-        expected_output = "\n".join(output.splitlines()[1:])
+def verify_one_example(testdir, monkeypatch, capsys):
+    # Use a consistent width for the terminal output.
+    monkeypatch.setenv("COLUMNS", "80")
+
+    def verify_one_example(code, *pytest_blocks):
         testdir.makepyfile(code)
-        testdir.makeini(dedent(
-            """\
-            [pytest]
-            console_output_style = classic
-            """
-        ))
-        result = testdir.runpytest()
-        expected_lines = expected_output.splitlines()
-        summary, inline, timepart = expected_lines[-1].partition(" in ")
-        # Replace the actual runtime with a glob, so the test isn't dependent
-        # on that.
-        timepart = "*" + timepart[timepart.index("s"):]
+        for output in pytest_blocks:
+            command_line = output.splitlines()[0]
+            cmd_tokens = shlex.split(command_line.lstrip("$ "))
+            expected_output = "\n".join(output.splitlines()[1:])
+            result = testdir.runpytest(*cmd_tokens[1:])
+            expected_lines = expected_output.splitlines()
+            summary, inline, timepart = expected_lines[-1].partition(" in ")
+            # Replace the actual running time with a glob, so the test isn't
+            # dependent on that.
+            timepart = "*" + timepart[timepart.index("s"):]
 
-        expected_lines[-1] = "".join([summary, inline, timepart])
+            expected_lines[-1] = "".join([summary, inline, timepart])
 
-        result.stdout.fnmatch_lines([
-            line
-            for line in expected_lines
-            # Don't match empty lines. Those might be useful for matching.
-            if line.strip() != ""
-        ])
+            result.stdout.fnmatch_lines([
+                line
+                for line in expected_lines
+                # Don't match empty lines. Those might be useful for matching.
+                if line.strip() != ""
+            ])
+            capsys.readouterr()
 
     return verify_one_example
 
@@ -103,11 +104,16 @@ def verify_examples(verify_one_example):
         blocks = extract_blocks(text)
 
         last_python_block = None
+        pytest_blocks = []
         for block_type, block_text in blocks:
             if block_type == TYPE_PYTHON:
+                if pytest_blocks:
+                    verify_one_example(last_python_block, *pytest_blocks)
                 last_python_block = block_text
+                pytest_blocks = []
                 continue
             if last_python_block is not None:
-                verify_one_example(last_python_block, block_text)
-            last_python_block = None
+                pytest_blocks.append(block_text)
+        if last_python_block and pytest_blocks:
+            verify_one_example(last_python_block, *pytest_blocks)
     return verify_examples

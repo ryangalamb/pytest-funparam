@@ -2,39 +2,7 @@
 pytest-verifun
 ==============
 
-.. image:: https://img.shields.io/pypi/v/pytest-verifun.svg
-    :target: https://pypi.org/project/pytest-verifun
-    :alt: PyPI version
-
-.. image:: https://img.shields.io/pypi/pyversions/pytest-verifun.svg
-    :target: https://pypi.org/project/pytest-verifun
-    :alt: Python versions
-
-.. image:: https://travis-ci.org/rjmill/pytest-verifun.svg?branch=master
-    :target: https://travis-ci.org/rjmill/pytest-verifun
-    :alt: See Build Status on Travis CI
-
-.. image:: https://ci.appveyor.com/api/projects/status/github/rjmill/pytest-verifun?branch=master
-    :target: https://ci.appveyor.com/project/rjmill/pytest-verifun/branch/master
-    :alt: See Build Status on AppVeyor
-
-An alternative way to parametrize test cases
-
-----
-
-This `pytest`_ plugin was generated with `Cookiecutter`_ along with `@hackebrot`_'s `cookiecutter-pytest-plugin`_ template.
-
-
-Features
---------
-
-* TODO
-
-
-Requirements
-------------
-
-* TODO
+``pytest-verifun`` makes it easy to write parametrized tests.
 
 
 Installation
@@ -48,12 +16,89 @@ You can install "pytest-verifun" via `pip`_ from `PyPI`_::
 Usage
 -----
 
-* TODO
+Inside a test function, decorate a function with the ``verifun`` fixture:
 
-Contributing
-------------
-Contributions are very welcome. Tests can be run with `tox`_, please ensure
-the coverage at least stays the same before you submit a pull request.
+.. code-block:: python
+
+    def test_addition(verifun):
+        @verifun
+        def verify_sum(a, b, expected):
+            assert a + b == expected
+
+        verify_sum(1, 2, 3)
+        verify_sum(2, 2, 5)  # OOPS!
+        verify_sum(4, 2, 6)
+
+
+And run pytest::
+
+    $ pytest
+    ============================= test session starts ==============================
+    collected 3 items
+
+    test_readme.py .F.                                                       [100%]
+
+    =================================== FAILURES ===================================
+    _______________________________ test_addition[1] _______________________________
+
+        def test_addition(verifun):
+            @verifun
+            def verify_sum(a, b, expected):
+                assert a + b == expected
+
+            verify_sum(1, 2, 3)
+    >       verify_sum(2, 2, 5)  # OOPS!
+
+    test_readme.py:7: 
+    _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    a = 2, b = 2, expected = 5
+   
+        @verifun
+        def verify_sum(a, b, expected):
+    >       assert a + b == expected
+    E       assert (2 + 2) == 5
+
+    test_readme.py:4: AssertionError
+    ========================= 1 failed, 2 passed in 0.03s ==========================
+
+
+The ``test_addition`` test case was split into 3 tests, one for each
+``verify_sum`` call.
+
+Because ``verifun`` is parametrizing the test calls, it even works with
+commands like ``pytest --last-failed``::
+
+    $ pytest --last-failed
+    ============================= test session starts ==============================
+    collected 1 item
+
+    test_readme.py F                                                         [100%]
+
+    =================================== FAILURES ===================================
+    _______________________________ test_addition[1] _______________________________
+
+        def test_addition(verifun):
+            @verifun
+            def verify_sum(a, b, expected):
+                assert a + b == expected
+
+            verify_sum(1, 2, 3)
+    >       verify_sum(2, 2, 5)  # OOPS!
+
+    test_readme.py:7: 
+    _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    a = 2, b = 2, expected = 5
+   
+        @verifun
+        def verify_sum(a, b, expected):
+    >       assert a + b == expected
+    E       assert (2 + 2) == 5
+
+    test_readme.py:4: AssertionError
+    ============================== 1 failed in 0.01s ===============================
+
 
 License
 -------
@@ -66,13 +111,7 @@ Issues
 
 If you encounter any problems, please `file an issue`_ along with a detailed description.
 
-.. _`Cookiecutter`: https://github.com/audreyr/cookiecutter
-.. _`@hackebrot`: https://github.com/hackebrot
 .. _`MIT`: http://opensource.org/licenses/MIT
-.. _`BSD-3`: http://opensource.org/licenses/BSD-3-Clause
-.. _`GNU GPL v3.0`: http://www.gnu.org/licenses/gpl-3.0.txt
-.. _`Apache Software License 2.0`: http://www.apache.org/licenses/LICENSE-2.0
-.. _`cookiecutter-pytest-plugin`: https://github.com/pytest-dev/cookiecutter-pytest-plugin
 .. _`file an issue`: https://github.com/rjmill/pytest-verifun/issues
 .. _`pytest`: https://github.com/pytest-dev/pytest
 .. _`tox`: https://tox.readthedocs.io/en/latest/

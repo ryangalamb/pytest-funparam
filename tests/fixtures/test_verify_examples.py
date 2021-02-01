@@ -28,7 +28,7 @@ def test_verify_examples_simple(verify_examples):
             ============================= test session starts ==============================
             collected 3 items
 
-            test_verify_examples_simple.py .F.
+            test_verify_examples_simple.py .F.                                       [100%]
 
             =================================== FAILURES ===================================
             _________________________________ test_sum[1] __________________________________
