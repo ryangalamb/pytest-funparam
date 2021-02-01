@@ -181,3 +181,34 @@ def test_verifun_deep_in_fixture(testdir):
         "failed": 1,
         "passed": 2,
     }
+
+
+def test_verifun_multiple_functions(testdir):
+    testdir.makepyfile(
+        r"""
+        def test_multiple(verifun):
+            @verifun
+            def verify_all_ints(*nums):
+                for num in nums:
+                    assert int(num) == num
+            @verifun
+            def verify_sum(a, b, c):
+                assert a + b == c
+
+            def verify_both(a, b, c):
+                verify_all_ints(a, b, c)
+                verify_sum(a, b, c)
+
+            verify_both(1, 2, 3)
+            # fails verify_all_ints
+            verify_both("foo", "bar", "foobar")
+            # fails verify_sum
+            # verify_both(2, 2, 3)
+        """
+    )
+    result = testdir.runpytest()
+
+    assert result.parseoutcomes() == {
+        "failed": 1,
+        "passed": 3,
+    }

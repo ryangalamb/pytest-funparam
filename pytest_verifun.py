@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import MagicMock
-from functools import wraps
+from functools import wraps, partial
 
 
 def grab_mock_fixture_value(fixture_def, verifun, name2fixturedefs):
@@ -81,29 +81,34 @@ class AbstractVerifun:
     """
 
     def __init__(self):
-        self.verify_function = None
-        self.ids = None
+        self.verify_functions = {}
+        self.ids_functions = {}
 
-    def call_verify_function(self, *args, **kwargs):  # pragma: no cover
+    def call_verify_function(self, key, *args, **kwargs):  # pragma: no cover
         raise NotImplementedError()
 
-    def __call__(self, verify_function=None, *, ids=None):
-        if ids is not None:
-            self.ids = ids
+    def set_functions(self, verify_function, ids_functions):
+        key = id(verify_function)
 
+        self.verify_functions[key] = verify_function
+        self.ids_functions[key] = ids_functions
+
+        return key
+
+    def __call__(self, verify_function=None, *, ids=None):
         # EARLY RETURN
         if verify_function is None:
             # Caller is most likely applying decorator like this:
             #   >>> @verifun()
             #   ... def verify_foo(): ...
             # Return the callable decorator so it can be used.
-            return self
+            return partial(self, ids=ids)
 
-        self.verify_function = verify_function
+        key = self.set_functions(verify_function, ids)
 
         @wraps(verify_function)
         def verifun_wrapper(*args, **kwargs):
-            return self.call_verify_function(*args, **kwargs)
+            return self.call_verify_function(key, *args, **kwargs)
 
         return verifun_wrapper
 
@@ -123,19 +128,22 @@ class GenerateTestsVerifun(AbstractVerifun):
         self.calls = []
         super().__init__()
 
-    def call_verify_function(self, *args, **kwargs):
-        self.calls.append((args, kwargs))
+    def call_verify_function(self, key, *args, **kwargs):
+        self.calls.append((key, args, kwargs))
+
+    def generate_id(self, key, *args, **kwargs):
+        ids = self.ids_functions[key]
+        if ids is not None:
+            return self.ids_functions[key](*args, **kwargs)
+        return None
 
     def generate_params(self):
-        if self.ids is None:
-            return list(range(len(self.calls)))
-
         params = []
         for callnum, call_args in enumerate(self.calls):
-            args, kwargs = call_args
+            key, args, kwargs = call_args
             params.append(pytest.param(
                 callnum,
-                id=self.ids(*args, **kwargs)
+                id=self.generate_id(key, *args, **kwargs)
             ))
         return params
 
@@ -153,10 +161,10 @@ class RuntestVerifun(AbstractVerifun):
         self.current_call_number = 0
         super().__init__()
 
-    def call_verify_function(self, *args, **kwargs):
+    def call_verify_function(self, key, *args, **kwargs):
         try:
             if self.current_call_number == self._verifun_call_number:
-                return self.verify_function(*args, **kwargs)
+                return self.verify_functions[key](*args, **kwargs)
         finally:
             self.current_call_number += 1
 
