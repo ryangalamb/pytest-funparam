@@ -5,7 +5,19 @@ import shlex
 
 # This fixture is tightly coupled with output formats. Since these tests are
 # more fragile than others, we should pin it to a specific version.
-SUPPORTED_VERSIONS = ["6.2.2"]
+SUPPORTED_VERSIONS = ["6.2", "5.4"]
+
+
+def _skip_if_not_supported():
+    for version in SUPPORTED_VERSIONS:
+        supp_nums = version.split(".")
+        found_nums = pytest.__version__.split(".")
+        if found_nums[:len(supp_nums)] == supp_nums:
+            return
+    pytest.skip(
+        "Documentation examples only supported on pytest versions: "
+        + repr(SUPPORTED_VERSIONS)
+    )
 
 
 TYPE_PYTHON = "python"
@@ -104,11 +116,7 @@ def verify_one_example(testdir, monkeypatch, capsys):
 
 @pytest.fixture
 def verify_examples(verify_one_example):
-    if pytest.__version__ not in SUPPORTED_VERSIONS:
-        pytest.skip(
-            "Documentation examples only supported on pytest versions: "
-            + repr(SUPPORTED_VERSIONS)
-        )
+    _skip_if_not_supported()
 
     def verify_examples(text):
         blocks = extract_blocks(text)
