@@ -3,6 +3,11 @@ from textwrap import dedent
 import shlex
 
 
+# This fixture is tightly coupled with output formats. Since these tests are
+# more fragile than others, we should pin it to a specific version.
+SUPPORTED_VERSIONS = ["6.2.2"]
+
+
 TYPE_PYTHON = "python"
 TYPE_OUTPUT = "output"
 
@@ -99,6 +104,11 @@ def verify_one_example(testdir, monkeypatch, capsys):
 
 @pytest.fixture
 def verify_examples(verify_one_example):
+    if pytest.__version__ not in SUPPORTED_VERSIONS:
+        pytest.skip(
+            "Documentation examples only supported on pytest versions: "
+            + repr(SUPPORTED_VERSIONS)
+        )
 
     def verify_examples(text):
         blocks = extract_blocks(text)
