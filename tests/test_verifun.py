@@ -136,7 +136,6 @@ def test_verifun_in_fixture(testdir):
             verify_sum(2, 2, 4)
         """
     )
-    testdir.inline_run()
     result = testdir.runpytest()
 
     assert result.parseoutcomes() == {
@@ -145,7 +144,7 @@ def test_verifun_in_fixture(testdir):
     }
 
 
-def test_verifun_deep_in_fixture(testdir):
+def test_verifun_nested_fixture(testdir):
     testdir.makepyfile(
         r"""
         import pytest
@@ -174,7 +173,6 @@ def test_verifun_deep_in_fixture(testdir):
             verify_nested(2, 2, 4)
         """
     )
-    testdir.inline_run()
     result = testdir.runpytest()
 
     assert result.parseoutcomes() == {
@@ -199,6 +197,50 @@ def test_verifun_multiple_functions(testdir):
                 verify_all_ints(a, b, c)
                 verify_sum(a, b, c)
 
+            verify_both(1, 2, 3)
+            # fails verify_all_ints
+            verify_both("foo", "bar", "foobar")
+            # fails verify_sum
+            # verify_both(2, 2, 3)
+        """
+    )
+    result = testdir.runpytest()
+
+    assert result.parseoutcomes() == {
+        "failed": 1,
+        "passed": 3,
+    }
+
+
+def test_verifun_multiple_nested_fixtures(testdir):
+    testdir.makepyfile(
+        r"""
+        import pytest
+
+        @pytest.fixture
+        def verify_sum(verifun):
+
+            @verifun
+            def verify_sum(a, b, c):
+                assert a + b == c
+
+            return verify_sum
+
+        @pytest.fixture
+        def verify_both(verify_sum, verifun):
+
+            @verifun
+            def verify_all_ints(*nums):
+                for num in nums:
+                    assert int(num) == num
+
+            def verify_both(a, b, c):
+                verify_sum(a, b, c)
+                verify_all_ints(a, b, c)
+
+            return verify_both
+
+        def test_foo(verify_both):
             verify_both(1, 2, 3)
             # fails verify_all_ints
             verify_both("foo", "bar", "foobar")

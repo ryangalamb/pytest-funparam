@@ -6,32 +6,23 @@ from functools import wraps, partial
 def grab_mock_fixture_value(fixture_def, verifun, name2fixturedefs):
     if fixture_def.argname == "verifun":
         return verifun
-    elif "verifun" in fixture_def.argnames:
-        kwargs = {
-            key: MagicMock()
-            for key in fixture_def.argnames
-        }
-        kwargs["verifun"] = verifun
-        return fixture_def.func(**kwargs)
+
+    fixture_kwargs = {}
     for arg in fixture_def.argnames:
         try:
             inner_fixture_def, *_ = name2fixturedefs[arg]
         except KeyError:
             # The fixture's not defined yet, so we probably don't care.
-            return None
+            fixture_kwargs[arg] = MagicMock()
+            continue
         found = grab_mock_fixture_value(
             inner_fixture_def,
             verifun,
             name2fixturedefs,
         )
-        if found is not None:
-            kwargs = {
-                key: MagicMock()
-                for key in fixture_def.argnames
-            }
-            kwargs[arg] = found
-            return fixture_def.func(**kwargs)
-    return None
+        fixture_kwargs[arg] = found or MagicMock()
+
+    return fixture_def.func(**fixture_kwargs)
 
 
 def generate_kwargs(definition, verifun):
@@ -87,11 +78,11 @@ class AbstractVerifun:
     def call_verify_function(self, key, *args, **kwargs):  # pragma: no cover
         raise NotImplementedError()
 
-    def set_functions(self, verify_function, ids_functions):
+    def register_functions(self, verify_function, ids):
         key = id(verify_function)
 
         self.verify_functions[key] = verify_function
-        self.ids_functions[key] = ids_functions
+        self.ids_functions[key] = ids
 
         return key
 
@@ -104,7 +95,7 @@ class AbstractVerifun:
             # Return the callable decorator so it can be used.
             return partial(self, ids=ids)
 
-        key = self.set_functions(verify_function, ids)
+        key = self.register_functions(verify_function, ids)
 
         @wraps(verify_function)
         def verifun_wrapper(*args, **kwargs):
