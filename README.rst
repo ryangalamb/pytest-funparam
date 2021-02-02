@@ -185,6 +185,31 @@ Note that the ``_marks`` keyword argument is passed through directly to the
 ``marks`` keyword argument of ``pytest.mark.param()``. This means the value can
 be either a single mark or a collection of marks.
 
+Similarly, add an ``id`` to a test using the ``_id`` keyword argument:
+
+.. code-block:: python
+
+    def test_addition(verifun):
+        @verifun
+        def verify_sum(a, b, expected):
+            assert a + b == expected
+
+        verify_sum(1, 2, 3, _id="one and two")
+        verify_sum(2, 2, 5, _id="two and two")
+        verify_sum(4, 2, 6, _id="four and two")
+
+::
+
+    $ pytest --collect-only
+    ============================= test session starts ==============================
+    collected 3 items
+
+    <Module test_readme.py>
+      <Function test_addition[one and two]>
+      <Function test_addition[two and two]>
+      <Function test_addition[four and two]>
+
+    ========================== 3 tests collected in 0.01s ==========================
 
 License
 -------

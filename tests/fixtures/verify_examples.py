@@ -5,7 +5,7 @@ import shlex
 
 # This fixture is tightly coupled with output formats. Since these tests are
 # more fragile than others, we should pin it to a specific version.
-SUPPORTED_VERSIONS = ["6.2", "5.4"]
+SUPPORTED_VERSIONS = ["6.2"]
 
 
 def _skip_if_not_supported():

@@ -114,6 +114,30 @@ def test_verifun_ids_default(testdir):
     ]
 
 
+def test_verifun_id_kwarg(testdir):
+    testdir.makepyfile(
+        r"""
+        def test_addition(verifun):
+            @verifun
+            def verify_sum(a, b, expected):
+                assert a + b == expected
+
+            verify_sum(1, 2, 3, _id="one and two")
+            verify_sum(2, 2, 5, _id="two and two")
+            verify_sum(4, 2, 6, _id="four and two")
+        """
+    )
+    items, _ = testdir.inline_genitems()
+
+    names = [item.name for item in items]
+    # Should generate numbered args.
+    assert names == [
+        "test_addition[one and two]",
+        "test_addition[two and two]",
+        "test_addition[four and two]",
+    ]
+
+
 def test_verifun_ids_override(testdir):
     testdir.makepyfile(
         r"""

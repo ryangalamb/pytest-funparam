@@ -76,7 +76,7 @@ class AbstractVerifun:
         self.ids_functions = {}
 
     def call_verify_function(
-        self, key, *args, _marks=(), **kwargs
+        self, key, *args, _marks=(), _id=None, **kwargs
     ):  # pragma: no cover
         raise NotImplementedError()
 
@@ -130,8 +130,8 @@ class GenerateTestsVerifun(AbstractVerifun):
         self.calls = []
         super().__init__()
 
-    def call_verify_function(self, key, *args, _marks=(), **kwargs):
-        self.calls.append((key, args, kwargs, _marks))
+    def call_verify_function(self, key, *args, _marks=(), _id=None, **kwargs):
+        self.calls.append((key, args, kwargs, _marks, _id))
 
     def generate_id(self, key, *args, **kwargs):
         ids = self.ids_functions[key]
@@ -142,10 +142,10 @@ class GenerateTestsVerifun(AbstractVerifun):
     def generate_params(self):
         params = []
         for callnum, call_args in enumerate(self.calls):
-            key, args, kwargs, marks = call_args
+            key, args, kwargs, marks, id_ = call_args
             params.append(pytest.param(
                 callnum,
-                id=self.generate_id(key, *args, **kwargs),
+                id=id_ or self.generate_id(key, *args, **kwargs),
                 marks=marks,
             ))
         return params
@@ -164,7 +164,7 @@ class RuntestVerifun(AbstractVerifun):
         self.current_call_number = 0
         super().__init__()
 
-    def call_verify_function(self, key, *args, _marks=(), **kwargs):
+    def call_verify_function(self, key, *args, _marks=(), _id=None, **kwargs):
         try:
             if self.current_call_number == self._verifun_call_number:
                 return self.verify_functions[key](*args, **kwargs)
