@@ -101,6 +101,15 @@ class AbstractVerifun:
         def verifun_wrapper(*args, **kwargs):
             return self.call_verify_function(key, *args, **kwargs)
 
+        def make_ids(ids):
+            """
+            Set the ids_function for the wrapped verify_function.
+            """
+            self.ids_functions[key] = ids
+            return ids
+
+        verifun_wrapper.make_ids = make_ids
+
         return verifun_wrapper
 
 
