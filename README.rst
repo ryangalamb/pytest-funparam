@@ -155,6 +155,37 @@ a wrapped verifier function:
     ========================= 1 failed, 2 passed in 0.02s ==========================
 
 
+Mark tests by using the ``_marks`` keyword argument on calls to verify:
+
+.. code-block:: python
+
+    import pytest
+
+    def test_addition(verifun):
+        @verifun
+        def verify_sum(a, b, expected):
+            assert a + b == expected
+
+        verify_sum(1, 2, 3)
+        verify_sum(2, 2, 5, _marks=pytest.mark.skip)
+        verify_sum(4, 2, 6)
+
+::
+
+    $ pytest
+    ============================= test session starts ==============================
+    collected 3 items
+
+    test_readme.py .s.                                                       [100%]
+
+    ========================= 2 passed, 1 skipped in 0.01s =========================
+
+
+Note that the ``_marks`` keyword argument is passed through directly to the
+``marks`` keyword argument of ``pytest.mark.param()``. This means the value can
+be either a single mark or a collection of marks.
+
+
 License
 -------
 

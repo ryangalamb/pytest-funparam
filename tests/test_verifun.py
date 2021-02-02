@@ -33,6 +33,32 @@ def test_verifun_basic(testdir):
     }
 
 
+def test_verifun_marks(testdir):
+    testdir.makepyfile(
+        """
+        import pytest
+
+        def test_addition(verifun):
+            @verifun
+            def verify_sum(a, b, expected):
+                assert a + b == expected
+
+            verify_sum(1, 2, 3)
+            verify_sum(2, 2, 5, _marks=pytest.mark.skip)
+            verify_sum(4, 2, 6)
+        """
+    )
+
+    result = testdir.runpytest()
+
+    assert result.ret == 0
+
+    assert result.parseoutcomes() == {
+        "skipped": 1,
+        "passed": 2,
+    }
+
+
 def test_verifun_does_not_die_from_fixtures(testdir):
     testdir.makepyfile(
         r"""
