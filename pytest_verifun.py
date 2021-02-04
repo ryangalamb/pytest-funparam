@@ -3,6 +3,10 @@ from unittest.mock import MagicMock
 from functools import wraps, partial
 
 
+# Sentinel value to mark an unrelated fixture.
+_unrelated_fixture = object()
+
+
 def grab_mock_fixture_value(fixture_def, verifun, name2fixturedefs):
     if fixture_def.argname == "verifun":
         return verifun
@@ -13,16 +17,30 @@ def grab_mock_fixture_value(fixture_def, verifun, name2fixturedefs):
             inner_fixture_def, *_ = name2fixturedefs[arg]
         except KeyError:
             # The fixture's not defined yet, so we probably don't care.
-            fixture_kwargs[arg] = MagicMock()
+            fixture_kwargs[arg] = _unrelated_fixture
             continue
         found = grab_mock_fixture_value(
             inner_fixture_def,
             verifun,
             name2fixturedefs,
         )
-        fixture_kwargs[arg] = found or MagicMock()
+        fixture_kwargs[arg] = found
 
-    return fixture_def.func(**fixture_kwargs)
+    # EARLY RETURN
+    if all(val is _unrelated_fixture for val in fixture_kwargs.values()):
+        # None of these dependent fixtures use a verifun fixture. So this one
+        # doesn't either!
+        return _unrelated_fixture
+
+    # Use MagicMocks to represent all the unrelated fixtures. Hopefully they
+    # won't cause any heinous errors when we run this fixture.
+    kwargs = {}
+    for name, value in fixture_kwargs.items():
+        if value is _unrelated_fixture:
+            value = MagicMock()
+        kwargs[name] = value
+
+    return fixture_def.func(**kwargs)
 
 
 def generate_kwargs(definition, verifun):
@@ -34,7 +52,7 @@ def generate_kwargs(definition, verifun):
     for name in sought_names:
         fixture_def, *_ = name2fixturedefs[name]
         found = grab_mock_fixture_value(fixture_def, verifun, name2fixturedefs)
-        if found is None:
+        if found is _unrelated_fixture:
             dryrun_kwargs[name] = MagicMock()
         else:
             dryrun_kwargs[name] = found

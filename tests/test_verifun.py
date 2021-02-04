@@ -332,3 +332,33 @@ def test_verifun_multiple_nested_fixtures(testdir):
         "failed": 1,
         "passed": 3,
     }
+
+
+def test_verifun_collection_exception_in_unrelated_fixture(testdir):
+    testdir.makepyfile(
+        r"""
+        import pytest
+
+        @pytest.fixture
+        def raise_error():
+            raise Exception("OOPS!")
+
+        @pytest.fixture
+        def verify_sum(verifun, raise_error):
+
+            @verifun
+            def verify_sum(a, b, c):
+                assert a + b == c
+
+            return verify_sum
+
+        def test_addition(verify_sum):
+            verify_sum(1, 2, 3)
+            verify_sum(2, 2, 3)
+            verify_sum(2, 2, 4)
+        """
+    )
+
+    items, _ = testdir.inline_genitems()
+    # Should collect 3 items without trouble
+    assert len(items) == 3
