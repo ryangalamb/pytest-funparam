@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import MagicMock
-from functools import wraps, partial
+from functools import wraps
 
 
 # Sentinel value to mark an unrelated fixture.
@@ -91,44 +91,22 @@ class AbstractVerifun:
 
     def __init__(self):
         self.verify_functions = {}
-        self.ids_functions = {}
 
     def call_verify_function(
         self, key, *args, _marks=(), _id=None, **kwargs
     ):  # pragma: no cover
         raise NotImplementedError()
 
-    def register_functions(self, verify_function, ids):
-        key = id(verify_function)
+    def _make_key(self, verify_function):
+        return id(verify_function)
 
+    def __call__(self, verify_function):
+        key = self._make_key(verify_function)
         self.verify_functions[key] = verify_function
-        self.ids_functions[key] = ids
-
-        return key
-
-    def __call__(self, verify_function=None, *, ids=None):
-        # EARLY RETURN
-        if verify_function is None:
-            # Caller is most likely applying decorator like this:
-            #   >>> @verifun()
-            #   ... def verify_foo(): ...
-            # Return the callable decorator so it can be used.
-            return partial(self, ids=ids)
-
-        key = self.register_functions(verify_function, ids)
 
         @wraps(verify_function)
         def verifun_wrapper(*args, **kwargs):
             return self.call_verify_function(key, *args, **kwargs)
-
-        def make_ids(ids):
-            """
-            Set the ids_function for the wrapped verify_function.
-            """
-            self.ids_functions[key] = ids
-            return ids
-
-        verifun_wrapper.make_ids = make_ids
 
         return verifun_wrapper
 
@@ -151,19 +129,13 @@ class GenerateTestsVerifun(AbstractVerifun):
     def call_verify_function(self, key, *args, _marks=(), _id=None, **kwargs):
         self.calls.append((key, args, kwargs, _marks, _id))
 
-    def generate_id(self, key, *args, **kwargs):
-        ids = self.ids_functions[key]
-        if ids is not None:
-            return self.ids_functions[key](*args, **kwargs)
-        return None
-
     def generate_params(self):
         params = []
         for callnum, call_args in enumerate(self.calls):
             key, args, kwargs, marks, id_ = call_args
             params.append(pytest.param(
                 callnum,
-                id=id_ or self.generate_id(key, *args, **kwargs),
+                id=id_,
                 marks=marks,
             ))
         return params

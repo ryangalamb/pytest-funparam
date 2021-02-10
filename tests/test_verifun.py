@@ -138,61 +138,6 @@ def test_verifun_id_kwarg(testdir):
     ]
 
 
-def test_verifun_ids_override(testdir):
-    testdir.makepyfile(
-        r"""
-        def test_sum(verifun):
-            def ids(a, b, expected):
-                return f"{a} + {b} == {expected}"
-
-            @verifun(ids=ids)
-            def verify_sum(a, b, expected):
-                assert a + b == expected
-
-            verify_sum(1, 2, 3)
-            verify_sum(2, 2, 4)
-            verify_sum(3, 10, 13)
-        """
-    )
-    items, _ = testdir.inline_genitems()
-
-    names = [item.name for item in items]
-    # Should use the ids function for identifiers.
-    assert names == [
-        "test_sum[1 + 2 == 3]",
-        "test_sum[2 + 2 == 4]",
-        "test_sum[3 + 10 == 13]",
-    ]
-
-
-def test_verifun_ids_decorator(testdir):
-    testdir.makepyfile(
-        r"""
-        def test_sum(verifun):
-            @verifun
-            def verify_sum(a, b, expected):
-                assert a + b == expected
-
-            @verify_sum.make_ids
-            def ids(a, b, expected):
-                return f"{a} + {b} == {expected}"
-
-            verify_sum(1, 2, 3)
-            verify_sum(2, 2, 4)
-            verify_sum(3, 10, 13)
-        """
-    )
-    items, _ = testdir.inline_genitems()
-
-    names = [item.name for item in items]
-    # Should use the ids function for identifiers.
-    assert names == [
-        "test_sum[1 + 2 == 3]",
-        "test_sum[2 + 2 == 4]",
-        "test_sum[3 + 10 == 13]",
-    ]
-
-
 def test_verifun_in_fixture(testdir):
     testdir.makepyfile(
         r"""

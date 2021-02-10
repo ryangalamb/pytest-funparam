@@ -100,61 +100,6 @@ commands like ``pytest --last-failed``::
     ============================== 1 failed in 0.01s ===============================
 
 
-To give each test case a pretty id, use the ``make_ids`` decorator attached to
-a wrapped verifier function:
-
-.. code-block:: python
-
-    def test_addition(verifun):
-        @verifun
-        def verify_sum(a, b, expected):
-            assert a + b == expected
-
-        @verify_sum.make_ids
-        def ids(a, b, expected):
-            return f"{repr(a)} + {repr(b)} == {repr(expected)}"
-
-        verify_sum(1, 2, 3)
-        verify_sum(2, 2, 5)  # OOPS!
-        verify_sum(4, 2, 6)
-
-::
-
-    $ pytest
-    ============================= test session starts ==============================
-    collected 3 items
-
-    test_readme.py .F.                                                       [100%]
-
-    =================================== FAILURES ===================================
-    __________________________ test_addition[2 + 2 == 5] ___________________________
-
-        def test_addition(verifun):
-            @verifun
-            def verify_sum(a, b, expected):
-                assert a + b == expected
-
-            @verify_sum.make_ids
-            def ids(a, b, expected):
-                return f"{repr(a)} + {repr(b)} == {repr(expected)}"
-
-            verify_sum(1, 2, 3)
-    >       verify_sum(2, 2, 5)  # OOPS!
-
-    test_readme.py:11: 
-    _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
-
-    a = 2, b = 2, expected = 5
-
-        @verifun
-        def verify_sum(a, b, expected):
-    >       assert a + b == expected
-    E       assert (2 + 2) == 5
-
-    test_readme.py:4: AssertionError
-    ========================= 1 failed, 2 passed in 0.02s ==========================
-
-
 Mark tests by using the ``_marks`` keyword argument on calls to verify:
 
 .. code-block:: python
