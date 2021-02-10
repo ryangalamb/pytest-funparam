@@ -1,13 +1,35 @@
+from __future__ import annotations
 import pytest
 from unittest.mock import MagicMock
 from functools import wraps
+from typing import TYPE_CHECKING
+
+
+if TYPE_CHECKING:
+    from _pytest.python import Metafunc, FunctionDefinition
+    from _pytest.fixtures import FixtureDef
+    from _pytest.mark import Mark, MarkDecorator, ParameterSet
+    from typing import (
+        Any,
+        Union,
+        Sequence,
+        Collection,
+        Callable,
+        Optional,
+    )
+    # This is from the type signature of `marks` kwarg for `pytest.param`.
+    TYPE_MARKS = Union[MarkDecorator, Collection[Union[MarkDecorator, Mark]]]
 
 
 # Sentinel value to mark an unrelated fixture.
 _unrelated_fixture = object()
 
 
-def grab_mock_fixture_value(fixture_def, verifun, name2fixturedefs):
+def grab_mock_fixture_value(
+    fixture_def: FixtureDef[Any],
+    verifun: GenerateTestsVerifun,
+    name2fixturedefs: dict[str, Sequence[FixtureDef[Any]]],
+) -> Union[MagicMock, Any]:
     if fixture_def.argname == "verifun":
         return verifun
 
@@ -43,7 +65,10 @@ def grab_mock_fixture_value(fixture_def, verifun, name2fixturedefs):
     return fixture_def.func(**kwargs)
 
 
-def generate_kwargs(definition, verifun):
+def generate_kwargs(
+    definition: FunctionDefinition,
+    verifun: GenerateTestsVerifun,
+) -> dict[str, Union[MagicMock, Any]]:
     dryrun_kwargs = {}
     fixtureinfo = definition._fixtureinfo
     sought_names = fixtureinfo.argnames
@@ -60,7 +85,7 @@ def generate_kwargs(definition, verifun):
     return dryrun_kwargs
 
 
-def pytest_generate_tests(metafunc):
+def pytest_generate_tests(metafunc: Metafunc) -> None:
     # EARLY RETURN
     if "verifun" not in metafunc.fixturenames:
         # Not interested in it, since our fixture isn't involved
@@ -89,23 +114,31 @@ class AbstractVerifun:
     needs to work the same every time.
     """
 
-    def __init__(self):
-        self.verify_functions = {}
+    def __init__(self) -> None:
+        self.verify_functions: dict[int, Callable[..., None]] = {}
 
     def call_verify_function(
-        self, key, *args, _marks=(), _id=None, **kwargs
-    ):  # pragma: no cover
+        self,
+        key: int,
+        *args: Any,
+        _marks: TYPE_MARKS = (),
+        _id: Optional[str] = None,
+        **kwargs: Any,
+    ) -> None:  # pragma: no cover
         raise NotImplementedError()
 
-    def _make_key(self, verify_function):
+    def _make_key(self, verify_function: Callable[..., None]) -> int:
         return id(verify_function)
 
-    def __call__(self, verify_function):
+    def __call__(
+        self,
+        verify_function: Callable[..., None]
+    ) -> Callable[..., None]:
         key = self._make_key(verify_function)
         self.verify_functions[key] = verify_function
 
         @wraps(verify_function)
-        def verifun_wrapper(*args, **kwargs):
+        def verifun_wrapper(*args: Any, **kwargs: Any) -> None:
             return self.call_verify_function(key, *args, **kwargs)
 
         return verifun_wrapper
@@ -122,14 +155,29 @@ class GenerateTestsVerifun(AbstractVerifun):
     calls with `generate_params()`.
     """
 
-    def __init__(self):
-        self.calls = []
+    def __init__(self) -> None:
+        self.calls: list[
+            tuple[
+                int,
+                Sequence[Any],
+                dict[str, Any],
+                TYPE_MARKS,
+                Optional[str],
+            ]
+        ] = []
         super().__init__()
 
-    def call_verify_function(self, key, *args, _marks=(), _id=None, **kwargs):
+    def call_verify_function(
+        self,
+        key: int,
+        *args: Any,
+        _marks: TYPE_MARKS = (),
+        _id: Optional[str] = None,
+        **kwargs: Any,
+    ) -> None:
         self.calls.append((key, args, kwargs, _marks, _id))
 
-    def generate_params(self):
+    def generate_params(self) -> Sequence[ParameterSet]:
         params = []
         for callnum, call_args in enumerate(self.calls):
             key, args, kwargs, marks, id_ = call_args
@@ -149,12 +197,19 @@ class RuntestVerifun(AbstractVerifun):
     matches the _verifun_call_number (provided by the parametrized fixture.)
     """
 
-    def __init__(self, _verifun_call_number):
+    def __init__(self, _verifun_call_number: int) -> None:
         self._verifun_call_number = _verifun_call_number
         self.current_call_number = 0
         super().__init__()
 
-    def call_verify_function(self, key, *args, _marks=(), _id=None, **kwargs):
+    def call_verify_function(
+        self,
+        key: int,
+        *args: Any,
+        _marks: TYPE_MARKS = (),
+        _id: Optional[str] = None,
+        **kwargs: Any,
+    ) -> None:
         try:
             if self.current_call_number == self._verifun_call_number:
                 return self.verify_functions[key](*args, **kwargs)
@@ -163,6 +218,6 @@ class RuntestVerifun(AbstractVerifun):
 
 
 @pytest.fixture
-def verifun(_verifun_call_number):
+def verifun(_verifun_call_number: int) -> AbstractVerifun:
 
     return RuntestVerifun(_verifun_call_number)
