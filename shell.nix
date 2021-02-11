@@ -5,6 +5,7 @@ pkgs.mkShell {
     python37
     python37Packages.virtualenv
     python38
+    python39
   ];
   shellHook = ''
     VENV_DIR="$PWD"/env
