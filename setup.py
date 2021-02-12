@@ -23,7 +23,7 @@ setup(
     description='An alternative way to parametrize test cases',
     long_description=read('README.rst'),
     py_modules=['pytest_verifun'],
-    python_requires='>=3.7',
+    python_requires='>=3.6',
     install_requires=['pytest>=4.6.0'],
     classifiers=[
         'Development Status :: 4 - Beta',
@@ -32,6 +32,7 @@ setup(
         'Topic :: Software Development :: Testing',
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',

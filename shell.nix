@@ -7,6 +7,7 @@ let
 in mkShell {
   buildInputs = [
     basePythonEnv
+    python36
     python38
     python39
   ];
