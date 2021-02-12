@@ -27,10 +27,10 @@ def test_verifun_basic(testdir):
     assert result.ret == 1
 
     # Should have expanded the tests.
-    assert result.parseoutcomes() == {
-        "failed": 2,
-        "passed": 2,
-    }
+    result.assert_outcomes(
+        failed=2,
+        passed=2,
+    )
 
 
 def test_verifun_marks(testdir):
@@ -53,10 +53,10 @@ def test_verifun_marks(testdir):
 
     assert result.ret == 0
 
-    assert result.parseoutcomes() == {
-        "skipped": 1,
-        "passed": 2,
-    }
+    result.assert_outcomes(
+        skipped=1,
+        passed=2,
+    )
 
 
 def test_verifun_does_not_die_from_fixtures(testdir):
@@ -83,10 +83,10 @@ def test_verifun_does_not_die_from_fixtures(testdir):
     assert result.ret == 1
 
     # Should have expanded the tests.
-    assert result.parseoutcomes() == {
-        "failed": 1,
-        "passed": 2,
-    }
+    result.assert_outcomes(
+        failed=1,
+        passed=2,
+    )
 
 
 def test_verifun_ids_default(testdir):
@@ -161,10 +161,10 @@ def test_verifun_in_fixture(testdir):
     )
     result = testdir.runpytest()
 
-    assert result.parseoutcomes() == {
-        "failed": 1,
-        "passed": 2,
-    }
+    result.assert_outcomes(
+        failed=1,
+        passed=2,
+    )
 
 
 def test_verifun_nested_fixture(testdir):
@@ -198,10 +198,10 @@ def test_verifun_nested_fixture(testdir):
     )
     result = testdir.runpytest()
 
-    assert result.parseoutcomes() == {
-        "failed": 1,
-        "passed": 2,
-    }
+    result.assert_outcomes(
+        failed=1,
+        passed=2,
+    )
 
 
 def test_verifun_multiple_functions(testdir):
@@ -229,10 +229,10 @@ def test_verifun_multiple_functions(testdir):
     )
     result = testdir.runpytest()
 
-    assert result.parseoutcomes() == {
-        "failed": 1,
-        "passed": 3,
-    }
+    result.assert_outcomes(
+        failed=1,
+        passed=3,
+    )
 
 
 def test_verifun_multiple_nested_fixtures(testdir):
@@ -273,10 +273,10 @@ def test_verifun_multiple_nested_fixtures(testdir):
     )
     result = testdir.runpytest()
 
-    assert result.parseoutcomes() == {
-        "failed": 1,
-        "passed": 3,
-    }
+    result.assert_outcomes(
+        failed=1,
+        passed=3,
+    )
 
 
 def test_verifun_collection_exception_in_unrelated_fixture(testdir):
