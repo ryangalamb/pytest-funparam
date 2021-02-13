@@ -3,7 +3,7 @@ It's like doctest for pytest examples! Given a file with pytest code snippets
 and sample output, verify that the code snippet runs a test with the expected
 output.
 
-Since this is specific to pytest-verifun, we can cut corners and make
+Since this is specific to pytest-funparam, we can cut corners and make
 assumptions that would be considered irresponsible under other circumstances.
 """
 

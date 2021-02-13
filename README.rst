@@ -1,27 +1,27 @@
-==============
-pytest-verifun
-==============
+===============
+pytest-funparam
+===============
 
-``pytest-verifun`` makes it easy to write parametrized tests.
+``pytest-funparam`` makes it easy to write parametrized tests.
 
 
 Installation
 ------------
 
-You can install "pytest-verifun" via `pip`_ from `PyPI`_::
+You can install "pytest-funparam" via `pip`_ from `PyPI`_::
 
-    $ pip install pytest-verifun
+    $ pip install pytest-funparam
 
 
 Usage
 -----
 
-Inside a test function, decorate a function with the ``verifun`` fixture:
+Inside a test function, decorate a function with the ``funparam`` fixture:
 
 .. code-block:: python
 
-    def test_addition(verifun):
-        @verifun
+    def test_addition(funparam):
+        @funparam
         def verify_sum(a, b, expected):
             assert a + b == expected
 
@@ -41,8 +41,8 @@ And run pytest::
     =================================== FAILURES ===================================
     _______________________________ test_addition[1] _______________________________
 
-        def test_addition(verifun):
-            @verifun
+        def test_addition(funparam):
+            @funparam
             def verify_sum(a, b, expected):
                 assert a + b == expected
 
@@ -54,7 +54,7 @@ And run pytest::
 
     a = 2, b = 2, expected = 5
    
-        @verifun
+        @funparam
         def verify_sum(a, b, expected):
     >       assert a + b == expected
     E       assert (2 + 2) == 5
@@ -66,7 +66,7 @@ And run pytest::
 The ``test_addition`` test case was split into 3 tests, one for each
 ``verify_sum`` call.
 
-Because ``verifun`` is parametrizing the test calls, it even works with
+Because ``funparam`` is parametrizing the test calls, it even works with
 commands like ``pytest --last-failed``::
 
     $ pytest --last-failed
@@ -78,8 +78,8 @@ commands like ``pytest --last-failed``::
     =================================== FAILURES ===================================
     _______________________________ test_addition[1] _______________________________
 
-        def test_addition(verifun):
-            @verifun
+        def test_addition(funparam):
+            @funparam
             def verify_sum(a, b, expected):
                 assert a + b == expected
 
@@ -91,7 +91,7 @@ commands like ``pytest --last-failed``::
 
     a = 2, b = 2, expected = 5
    
-        @verifun
+        @funparam
         def verify_sum(a, b, expected):
     >       assert a + b == expected
     E       assert (2 + 2) == 5
@@ -106,8 +106,8 @@ Mark tests by using the ``_marks`` keyword argument on calls to verify:
 
     import pytest
 
-    def test_addition(verifun):
-        @verifun
+    def test_addition(funparam):
+        @funparam
         def verify_sum(a, b, expected):
             assert a + b == expected
 
@@ -134,8 +134,8 @@ Similarly, add an ``id`` to a test using the ``_id`` keyword argument:
 
 .. code-block:: python
 
-    def test_addition(verifun):
-        @verifun
+    def test_addition(funparam):
+        @funparam
         def verify_sum(a, b, expected):
             assert a + b == expected
 
@@ -159,7 +159,7 @@ Similarly, add an ``id`` to a test using the ``_id`` keyword argument:
 License
 -------
 
-Distributed under the terms of the `MIT`_ license, "pytest-verifun" is free and open source software
+Distributed under the terms of the `MIT`_ license, "pytest-funparam" is free and open source software
 
 
 Issues
@@ -168,7 +168,7 @@ Issues
 If you encounter any problems, please `file an issue`_ along with a detailed description.
 
 .. _`MIT`: http://opensource.org/licenses/MIT
-.. _`file an issue`: https://github.com/rjmill/pytest-verifun/issues
+.. _`file an issue`: https://github.com/rjmill/pytest-funparam/issues
 .. _`pytest`: https://github.com/pytest-dev/pytest
 .. _`tox`: https://tox.readthedocs.io/en/latest/
 .. _`pip`: https://pypi.org/project/pip/

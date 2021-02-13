@@ -12,8 +12,8 @@ def test_verify_examples_simple(verify_examples):
 
         .. code-block:: python
 
-            def test_sum(verifun):
-                @verifun
+            def test_sum(funparam):
+                @funparam
                 def verify_sum(a, b, expected):
                     assert a + b == expected
 
@@ -33,8 +33,8 @@ def test_verify_examples_simple(verify_examples):
             =================================== FAILURES ===================================
             _________________________________ test_sum[1] __________________________________
 
-                def test_sum(verifun):
-                    @verifun
+                def test_sum(funparam):
+                    @funparam
                     def verify_sum(a, b, expected):
                         assert a + b == expected
 
@@ -46,7 +46,7 @@ def test_verify_examples_simple(verify_examples):
 
             a = 2, b = 2, expected = 3
            
-                @verifun
+                @funparam
                 def verify_sum(a, b, expected):
             >       assert a + b == expected
             E       assert (2 + 2) == 3

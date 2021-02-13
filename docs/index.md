@@ -1,3 +1,3 @@
-# Welcome to pytest-verifun
+# Welcome to pytest-funparam
 
 An alternative way to parametrize test cases

@@ -29,11 +29,11 @@ _unrelated_fixture = object()
 
 def grab_mock_fixture_value(
     fixture_def: "FixtureDef[Any]",
-    verifun: "GenerateTestsVerifun",
+    funparam: "GenerateTestsFunparam",
     name2fixturedefs: Dict[str, Sequence["FixtureDef[Any]"]],
 ) -> Union[MagicMock, Any]:
-    if fixture_def.argname == "verifun":
-        return verifun
+    if fixture_def.argname == "funparam":
+        return funparam
 
     fixture_kwargs = {}
     for arg in fixture_def.argnames:
@@ -45,14 +45,14 @@ def grab_mock_fixture_value(
             continue
         found = grab_mock_fixture_value(
             inner_fixture_def,
-            verifun,
+            funparam,
             name2fixturedefs,
         )
         fixture_kwargs[arg] = found
 
     # EARLY RETURN
     if all(val is _unrelated_fixture for val in fixture_kwargs.values()):
-        # None of these dependent fixtures use a verifun fixture. So this one
+        # None of these dependent fixtures use a funparam fixture. So this one
         # doesn't either!
         return _unrelated_fixture
 
@@ -69,7 +69,7 @@ def grab_mock_fixture_value(
 
 def generate_kwargs(
     definition: "FunctionDefinition",
-    verifun: "GenerateTestsVerifun",
+    funparam: "GenerateTestsFunparam",
 ) -> Dict[str, Union[MagicMock, Any]]:
     dryrun_kwargs = {}
     fixtureinfo = definition._fixtureinfo
@@ -78,7 +78,9 @@ def generate_kwargs(
     name2fixturedefs = fixtureinfo.name2fixturedefs
     for name in sought_names:
         fixture_def, *_ = name2fixturedefs[name]
-        found = grab_mock_fixture_value(fixture_def, verifun, name2fixturedefs)
+        found = grab_mock_fixture_value(
+            fixture_def, funparam, name2fixturedefs
+        )
         if found is _unrelated_fixture:
             dryrun_kwargs[name] = MagicMock()
         else:
@@ -89,30 +91,30 @@ def generate_kwargs(
 
 def pytest_generate_tests(metafunc: "Metafunc") -> None:
     # EARLY RETURN
-    if "verifun" not in metafunc.fixturenames:
+    if "funparam" not in metafunc.fixturenames:
         # Not interested in it, since our fixture isn't involved
         return
 
     # Call the test function with dummy fixtures to see how many times the
     # verify function is called.
-    dryrun_verifun = GenerateTestsVerifun()
+    dryrun_funparam = GenerateTestsFunparam()
 
-    kwargs = generate_kwargs(metafunc.definition, dryrun_verifun)
+    kwargs = generate_kwargs(metafunc.definition, dryrun_funparam)
 
     metafunc.function(**kwargs)
 
     metafunc.parametrize(
-        "_verifun_call_number",
-        dryrun_verifun.generate_params()
+        "_funparam_call_number",
+        dryrun_funparam.generate_params()
     )
 
 
-class AbstractVerifun:
+class AbstractFunparam:
     """
-    The base API for the `verifun` fixture.
+    The base API for the `funparam` fixture.
 
-    verifun runs the test function multiple times, at different points in
-    the pytest lifecycle. Each run has a different job, but the verifun object
+    funparam runs the test function multiple times, at different points in
+    the pytest lifecycle. Each run has a different job, but the funparam object
     needs to work the same every time.
     """
 
@@ -140,21 +142,21 @@ class AbstractVerifun:
         self.verify_functions[key] = verify_function
 
         @wraps(verify_function)
-        def verifun_wrapper(*args: Any, **kwargs: Any) -> None:
+        def funparam_wrapper(*args: Any, **kwargs: Any) -> None:
             return self.call_verify_function(key, *args, **kwargs)
 
-        return verifun_wrapper
+        return funparam_wrapper
 
 
-class GenerateTestsVerifun(AbstractVerifun):
+class GenerateTestsFunparam(AbstractFunparam):
     """
-    The `verifun` fixture provided to the "dry run" test call during
+    The `funparam` fixture provided to the "dry run" test call during
     `pytest_generate_tests`.
 
     Record all calls to verify_function, but don't call the wrapped function.
 
-    Generate test parameters based off `verifun` configuration and the recorded
-    calls with `generate_params()`.
+    Generate test parameters based off `funparam` configuration and the
+    recorded calls with `generate_params()`.
     """
 
     def __init__(self) -> None:
@@ -191,16 +193,16 @@ class GenerateTestsVerifun(AbstractVerifun):
         return params
 
 
-class RuntestVerifun(AbstractVerifun):
+class RuntestFunparam(AbstractFunparam):
     """
-    The `verifun` fixture provided to each run of the test function.
+    The `funparam` fixture provided to each run of the test function.
 
     Skips all calls to verify_function, except for when the current_call_number
-    matches the _verifun_call_number (provided by the parametrized fixture.)
+    matches the _funparam_call_number (provided by the parametrized fixture.)
     """
 
-    def __init__(self, _verifun_call_number: int) -> None:
-        self._verifun_call_number = _verifun_call_number
+    def __init__(self, _funparam_call_number: int) -> None:
+        self._funparam_call_number = _funparam_call_number
         self.current_call_number = 0
         super().__init__()
 
@@ -213,13 +215,13 @@ class RuntestVerifun(AbstractVerifun):
         **kwargs: Any,
     ) -> None:
         try:
-            if self.current_call_number == self._verifun_call_number:
+            if self.current_call_number == self._funparam_call_number:
                 return self.verify_functions[key](*args, **kwargs)
         finally:
             self.current_call_number += 1
 
 
 @pytest.fixture
-def verifun(_verifun_call_number: int) -> AbstractVerifun:
+def funparam(_funparam_call_number: int) -> AbstractFunparam:
 
-    return RuntestVerifun(_verifun_call_number)
+    return RuntestFunparam(_funparam_call_number)

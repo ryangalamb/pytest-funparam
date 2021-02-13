@@ -1,11 +1,11 @@
-def test_verifun_basic(testdir):
+def test_funparam_basic(testdir):
     """Simple test of the base functionality."""
 
     # create a temporary pytest test module
     testdir.makepyfile(
         """
-        def test_foo(verifun):
-            @verifun
+        def test_foo(funparam):
+            @funparam
             def verify_foo(a, b, c):
                 assert a + b == c
 
@@ -33,13 +33,13 @@ def test_verifun_basic(testdir):
     )
 
 
-def test_verifun_marks(testdir):
+def test_funparam_marks(testdir):
     testdir.makepyfile(
         """
         import pytest
 
-        def test_addition(verifun):
-            @verifun
+        def test_addition(funparam):
+            @funparam
             def verify_sum(a, b, expected):
                 assert a + b == expected
 
@@ -59,12 +59,12 @@ def test_verifun_marks(testdir):
     )
 
 
-def test_verifun_does_not_die_from_fixtures(testdir):
+def test_funparam_does_not_die_from_fixtures(testdir):
     testdir.makepyfile(
         r"""
-        def test_with_fixtures(capsys, verifun):
+        def test_with_fixtures(capsys, funparam):
 
-            @verifun
+            @funparam
             def verify_with_fixtures(text):
                 print(text)
                 outerr = capsys.readouterr()
@@ -89,12 +89,12 @@ def test_verifun_does_not_die_from_fixtures(testdir):
     )
 
 
-def test_verifun_ids_default(testdir):
+def test_funparam_ids_default(testdir):
     testdir.makepyfile(
         r"""
-        def test_sum(verifun):
+        def test_sum(funparam):
 
-            @verifun
+            @funparam
             def verify_sum(a, b, expected):
                 assert a + b == expected
 
@@ -114,11 +114,11 @@ def test_verifun_ids_default(testdir):
     ]
 
 
-def test_verifun_id_kwarg(testdir):
+def test_funparam_id_kwarg(testdir):
     testdir.makepyfile(
         r"""
-        def test_addition(verifun):
-            @verifun
+        def test_addition(funparam):
+            @funparam
             def verify_sum(a, b, expected):
                 assert a + b == expected
 
@@ -138,15 +138,15 @@ def test_verifun_id_kwarg(testdir):
     ]
 
 
-def test_verifun_in_fixture(testdir):
+def test_funparam_in_fixture(testdir):
     testdir.makepyfile(
         r"""
         import pytest
 
         @pytest.fixture
-        def verify_sum(verifun):
+        def verify_sum(funparam):
 
-            @verifun
+            @funparam
             def verify_sum(a, b, c):
                 assert a + b == c
 
@@ -167,15 +167,15 @@ def test_verifun_in_fixture(testdir):
     )
 
 
-def test_verifun_nested_fixture(testdir):
+def test_funparam_nested_fixture(testdir):
     testdir.makepyfile(
         r"""
         import pytest
 
         @pytest.fixture
-        def verify_sum(verifun):
+        def verify_sum(funparam):
 
-            @verifun
+            @funparam
             def verify_sum(a, b, c):
                 assert a + b == c
 
@@ -204,15 +204,15 @@ def test_verifun_nested_fixture(testdir):
     )
 
 
-def test_verifun_multiple_functions(testdir):
+def test_funparam_multiple_functions(testdir):
     testdir.makepyfile(
         r"""
-        def test_multiple(verifun):
-            @verifun
+        def test_multiple(funparam):
+            @funparam
             def verify_all_ints(*nums):
                 for num in nums:
                     assert int(num) == num
-            @verifun
+            @funparam
             def verify_sum(a, b, c):
                 assert a + b == c
 
@@ -235,24 +235,24 @@ def test_verifun_multiple_functions(testdir):
     )
 
 
-def test_verifun_multiple_nested_fixtures(testdir):
+def test_funparam_multiple_nested_fixtures(testdir):
     testdir.makepyfile(
         r"""
         import pytest
 
         @pytest.fixture
-        def verify_sum(verifun):
+        def verify_sum(funparam):
 
-            @verifun
+            @funparam
             def verify_sum(a, b, c):
                 assert a + b == c
 
             return verify_sum
 
         @pytest.fixture
-        def verify_both(verify_sum, verifun):
+        def verify_both(verify_sum, funparam):
 
-            @verifun
+            @funparam
             def verify_all_ints(*nums):
                 for num in nums:
                     assert int(num) == num
@@ -279,7 +279,7 @@ def test_verifun_multiple_nested_fixtures(testdir):
     )
 
 
-def test_verifun_collection_exception_in_unrelated_fixture(testdir):
+def test_funparam_collection_exception_in_unrelated_fixture(testdir):
     testdir.makepyfile(
         r"""
         import pytest
@@ -289,9 +289,9 @@ def test_verifun_collection_exception_in_unrelated_fixture(testdir):
             raise Exception("OOPS!")
 
         @pytest.fixture
-        def verify_sum(verifun, raise_error):
+        def verify_sum(funparam, raise_error):
 
-            @verifun
+            @funparam
             def verify_sum(a, b, c):
                 assert a + b == c
 

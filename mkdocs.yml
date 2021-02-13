@@ -1,10 +1,10 @@
-site_name: pytest-verifun
+site_name: pytest-funparam
 site_description: An alternative way to parametrize test cases
 site_author: Ryan J. Miller
 
 theme: readthedocs
 
-repo_url: https://github.com/rjmill/pytest-verifun
+repo_url: https://github.com/rjmill/pytest-funparam
 
 pages:
 - Home: index.md
