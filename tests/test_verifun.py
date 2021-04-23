@@ -307,3 +307,43 @@ def test_funparam_collection_exception_in_unrelated_fixture(testdir):
     items, _ = testdir.inline_genitems()
     # Should collect 3 items without trouble
     assert len(items) == 3
+
+
+def test_funparam_nested_verifiers(testdir):
+    testdir.makepyfile(
+        r"""
+        import pytest
+
+        @pytest.fixture
+        def verify_stuff(funparam):
+
+            @funparam
+            def _verify_all_ints(*args):
+                for arg in args:
+                    assert int(arg) == arg
+
+            @funparam
+            def _verify_addition(a, b, c):
+                assert a + b == c
+
+            @funparam
+            def _verify_stuff(a, b, c):
+                _verify_all_ints(a, b, c)
+                _verify_addition(a, b, c)
+
+            return _verify_stuff
+
+        def test_nested_verifiers(verify_stuff):
+            verify_stuff(1, 2, 3)
+            verify_stuff(2, 2, 3)
+            verify_stuff("a", "b", "ab")
+        """
+    )
+    result = testdir.runpytest()
+    result.assert_outcomes(
+        # Should fail the lot of them.
+        failed=3,
+    )
+    result.stdout.fnmatch_lines(3 * [
+        "*Cannot nest functions decorated with 'funparam'*",
+    ])

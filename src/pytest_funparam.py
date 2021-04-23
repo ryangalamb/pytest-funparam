@@ -109,6 +109,21 @@ def pytest_generate_tests(metafunc: "Metafunc") -> None:
     )
 
 
+class NestedFunparamError(Exception):
+    """
+    A 'funparam' function was called from within another 'funparam' function.
+
+    'funparam' does a dry run of the test function to discover how many times
+    'funparam' functions are called. It then generates that many parametrized
+    test items.
+
+    Because 'funparam' functions aren't actually called during the dry run, any
+    calls from inside them will not be detected. 'funparam' cannot generate
+    the right number test runs in these circumstances.
+    """
+    pass
+
+
 class AbstractFunparam:
     """
     The base API for the `funparam` fixture.
@@ -202,9 +217,13 @@ class RuntestFunparam(AbstractFunparam):
     """
 
     def __init__(self, _funparam_call_number: int) -> None:
+        super().__init__()
+
         self._funparam_call_number = _funparam_call_number
         self.current_call_number = 0
-        super().__init__()
+        # Track when we're inside a call, so we can tell users not to nest
+        # funparams.
+        self._inside_call = False
 
     def call_verify_function(
         self,
@@ -214,14 +233,19 @@ class RuntestFunparam(AbstractFunparam):
         _id: Optional[str] = None,
         **kwargs: Any,
     ) -> None:
+        if self._inside_call is True:
+            raise NestedFunparamError(
+                "Cannot nest functions decorated with 'funparam'."
+            )
         try:
             if self.current_call_number == self._funparam_call_number:
+                self._inside_call = True
                 return self.verify_functions[key](*args, **kwargs)
         finally:
             self.current_call_number += 1
+            self._inside_call = False
 
 
 @pytest.fixture
 def funparam(_funparam_call_number: int) -> AbstractFunparam:
-
     return RuntestFunparam(_funparam_call_number)
