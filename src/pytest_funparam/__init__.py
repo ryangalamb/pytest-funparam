@@ -124,13 +124,13 @@ class NestedFunparamError(Exception):
     pass
 
 
-class AbstractFunparam:
+class Funparam:
     """
     The base API for the `funparam` fixture.
 
-    funparam runs the test function multiple times, at different points in
-    the pytest lifecycle. Each run has a different job, but the funparam object
-    needs to work the same every time.
+    This is never instantiated directly, but it represents the common interface
+    between all values of the `funparam` fixture. If you're looking for
+    something to use in a type hint, this is it.
     """
 
     def __init__(self) -> None:
@@ -163,7 +163,7 @@ class AbstractFunparam:
         return funparam_wrapper
 
 
-class GenerateTestsFunparam(AbstractFunparam):
+class GenerateTestsFunparam(Funparam):
     """
     The `funparam` fixture provided to the "dry run" test call during
     `pytest_generate_tests`.
@@ -208,7 +208,7 @@ class GenerateTestsFunparam(AbstractFunparam):
         return params
 
 
-class RuntestFunparam(AbstractFunparam):
+class RuntestFunparam(Funparam):
     """
     The `funparam` fixture provided to each run of the test function.
 
@@ -247,5 +247,5 @@ class RuntestFunparam(AbstractFunparam):
 
 
 @pytest.fixture
-def funparam(_funparam_call_number: int) -> AbstractFunparam:
+def funparam(_funparam_call_number: int) -> Funparam:
     return RuntestFunparam(_funparam_call_number)
