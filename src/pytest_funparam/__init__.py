@@ -23,27 +23,37 @@ if TYPE_CHECKING:  # pragma: no cover
     TYPE_MARKS = Union[MarkDecorator, Collection[Union[MarkDecorator, Mark]]]
 
 
+class NotFunparam(Exception):
+    """
+    Signal that no funparam was found where we were looking.
+    """
+
+
 # Sentinel value to mark an unrelated fixture.
 _unrelated_fixture = object()
 
 
 def grab_mock_fixture_value(
     fixture_name: str,
-    funparam: "GenerateTestsFunparam",
+    funparam_fixture: "GenerateTestsFunparam",
     name2fixturedefs: Dict[str, Sequence["FixtureDef[Any]"]],
 ) -> Union[MagicMock, Any]:
     try:
-        fixture_def, *_ = name2fixturedefs[fixture_name]
+        *_, fixture_def = name2fixturedefs[fixture_name]
     except KeyError:
         # EARLY RETURN
         return _unrelated_fixture
 
     if fixture_def.argname == "funparam":
-        return funparam
+        # HACK: Ignore type because mypy doesn't recognize it as a wrapper.
+        if fixture_def.func is funparam.__wrapped__:  # type: ignore
+            return funparam_fixture
+        else:
+            return _unrelated_fixture
 
     fixture_kwargs = {
         arg: grab_mock_fixture_value(
-            arg, funparam, name2fixturedefs
+            arg, funparam_fixture, name2fixturedefs
         )
         for arg in fixture_def.argnames
     }
@@ -67,21 +77,27 @@ def grab_mock_fixture_value(
 
 def generate_kwargs(
     definition: "FunctionDefinition",
-    funparam: "GenerateTestsFunparam",
+    funparam_fixture: "GenerateTestsFunparam",
 ) -> Dict[str, Union[MagicMock, Any]]:
-    dryrun_kwargs = {}
+    found_values = {}
     fixtureinfo = definition._fixtureinfo
     sought_names = fixtureinfo.argnames
 
     name2fixturedefs = fixtureinfo.name2fixturedefs
     for name in sought_names:
         found = grab_mock_fixture_value(
-            name, funparam, name2fixturedefs
+            name, funparam_fixture, name2fixturedefs
         )
-        if found is _unrelated_fixture:
-            dryrun_kwargs[name] = MagicMock()
-        else:
-            dryrun_kwargs[name] = found
+        if found is not _unrelated_fixture:
+            found_values[name] = found
+
+    if found_values == {}:
+        raise NotFunparam()
+
+    dryrun_kwargs = {
+        name: found_values.get(name) or MagicMock()
+        for name in sought_names
+    }
 
     return dryrun_kwargs
 
@@ -96,7 +112,10 @@ def pytest_generate_tests(metafunc: "Metafunc") -> None:
     # verify function is called.
     dryrun_funparam = GenerateTestsFunparam()
 
-    kwargs = generate_kwargs(metafunc.definition, dryrun_funparam)
+    try:
+        kwargs = generate_kwargs(metafunc.definition, dryrun_funparam)
+    except NotFunparam:
+        return
 
     metafunc.function(**kwargs)
 

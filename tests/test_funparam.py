@@ -452,3 +452,21 @@ def test_parametrize_mark(testdir):
     """)
     res = testdir.runpytest()
     res.assert_outcomes(passed=8, failed=1)
+
+
+def test_clobbering_funparam(testdir):
+    """
+    Why would you do this? I don't know. But it's worth knowing about.
+    """
+    testdir.makepyfile("""\
+        import pytest
+
+        @pytest.fixture
+        def funparam():
+            return 42
+
+        def test_it(funparam):
+            assert funparam == 42
+    """)
+    res = testdir.runpytest()
+    res.assert_outcomes(passed=1)
