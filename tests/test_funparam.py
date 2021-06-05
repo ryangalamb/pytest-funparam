@@ -1,3 +1,33 @@
+import pytest
+
+
+@pytest.fixture(scope="session")
+def compat_assert_outcomes():
+    """
+    Use RunResult.assert_outcomes() in a way that's consistent across pytest
+    versions.
+
+    For more info, on how/why this is inconsistent between pytest versions:
+    https://github.com/pytest-dev/pytest/issues/6505
+    """
+
+    def _compat_assert_outcomes(run_result, **kwargs):
+        unplural = {
+            'errors': 'error',
+            'warnings': 'warning',
+        }
+        try:
+            run_result.assert_outcomes(**kwargs)
+        except TypeError:
+            # Unpluralize the nouns and try again.
+            run_result.assert_outcomes(**{
+                unplural.get(key, key): val
+                for key, val in kwargs.items()
+            })
+
+    return _compat_assert_outcomes
+
+
 def test_funparam_basic(testdir):
     """Simple test of the base functionality."""
 
@@ -346,4 +376,27 @@ def test_funparam_nested_verifiers(testdir):
     )
     result.stdout.fnmatch_lines(3 * [
         "*Cannot nest functions decorated with 'funparam'*",
+    ])
+
+
+def test_funparam_nonexistent_fixture(testdir, compat_assert_outcomes):
+    testdir.makepyfile(
+        r"""
+        import pytest
+
+        def test_nonexistent_fixture(funparam, bogus_fixture):
+
+            @funparam
+            def verify_addition(a, b, expected):
+                assert a + b == expected
+
+            verify_addition(1, 2, 3)
+            verify_addition(2, 2, 4)
+        """
+    )
+    result = testdir.runpytest()
+    compat_assert_outcomes(result, errors=2)
+    # Should complain about not finding the fixture.
+    result.stdout.fnmatch_lines(2 * [
+        "*fixture 'bogus_fixture' not found",
     ])

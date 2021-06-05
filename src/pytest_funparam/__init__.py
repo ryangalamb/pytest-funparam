@@ -77,10 +77,13 @@ def generate_kwargs(
 
     name2fixturedefs = fixtureinfo.name2fixturedefs
     for name in sought_names:
-        fixture_def, *_ = name2fixturedefs[name]
-        found = grab_mock_fixture_value(
-            fixture_def, funparam, name2fixturedefs
-        )
+        try:
+            fixture_def, *_ = name2fixturedefs[name]
+            found = grab_mock_fixture_value(
+                fixture_def, funparam, name2fixturedefs
+            )
+        except KeyError:
+            found = _unrelated_fixture
         if found is _unrelated_fixture:
             dryrun_kwargs[name] = MagicMock()
         else:
