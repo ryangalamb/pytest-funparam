@@ -28,27 +28,25 @@ _unrelated_fixture = object()
 
 
 def grab_mock_fixture_value(
-    fixture_def: "FixtureDef[Any]",
+    fixture_name: str,
     funparam: "GenerateTestsFunparam",
     name2fixturedefs: Dict[str, Sequence["FixtureDef[Any]"]],
 ) -> Union[MagicMock, Any]:
+    try:
+        fixture_def, *_ = name2fixturedefs[fixture_name]
+    except KeyError:
+        # EARLY RETURN
+        return _unrelated_fixture
+
     if fixture_def.argname == "funparam":
         return funparam
 
-    fixture_kwargs = {}
-    for arg in fixture_def.argnames:
-        try:
-            inner_fixture_def, *_ = name2fixturedefs[arg]
-        except KeyError:
-            # The fixture's not defined yet, so we probably don't care.
-            fixture_kwargs[arg] = _unrelated_fixture
-            continue
-        found = grab_mock_fixture_value(
-            inner_fixture_def,
-            funparam,
-            name2fixturedefs,
+    fixture_kwargs = {
+        arg: grab_mock_fixture_value(
+            arg, funparam, name2fixturedefs
         )
-        fixture_kwargs[arg] = found
+        for arg in fixture_def.argnames
+    }
 
     # EARLY RETURN
     if all(val is _unrelated_fixture for val in fixture_kwargs.values()):
@@ -77,13 +75,9 @@ def generate_kwargs(
 
     name2fixturedefs = fixtureinfo.name2fixturedefs
     for name in sought_names:
-        try:
-            fixture_def, *_ = name2fixturedefs[name]
-            found = grab_mock_fixture_value(
-                fixture_def, funparam, name2fixturedefs
-            )
-        except KeyError:
-            found = _unrelated_fixture
+        found = grab_mock_fixture_value(
+            name, funparam, name2fixturedefs
+        )
         if found is _unrelated_fixture:
             dryrun_kwargs[name] = MagicMock()
         else:
