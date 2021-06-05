@@ -1,4 +1,8 @@
+import pytest
 from pathlib import Path
+
+
+pytestmark = pytest.mark.examples
 
 
 def test_readme(verify_examples):
