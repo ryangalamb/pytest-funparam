@@ -400,3 +400,55 @@ def test_funparam_nonexistent_fixture(testdir, compat_assert_outcomes):
     result.stdout.fnmatch_lines(2 * [
         "*fixture 'bogus_fixture' not found",
     ])
+
+
+def test_parametrized_fixture(testdir):
+    testdir.makepyfile("""\
+        import pytest
+
+        @pytest.fixture(params=[3, 7, 2.4])
+        def number(request):
+            return request.param
+
+        def test_numbers(number, funparam):
+
+            @funparam
+            def verify_reversible(num1, num2):
+                product = num1 * num2
+                assert product / num2 == num1
+
+            @funparam
+            def verify_int(num):
+                assert int(num) == num
+
+            verify_reversible(number, 3)
+            verify_reversible(3, number)
+            verify_int(number)
+    """)
+    res = testdir.runpytest()
+    # Should have parametrized properly
+    res.assert_outcomes(passed=8, failed=1)
+
+
+def test_parametrize_mark(testdir):
+    testdir.makepyfile("""\
+        import pytest
+
+        @pytest.mark.parametrize('number', [3, 7, 2.4])
+        def test_numbers(number, funparam):
+
+            @funparam
+            def verify_reversible(num1, num2):
+                product = num1 * num2
+                assert product / num2 == num1
+
+            @funparam
+            def verify_int(num):
+                assert int(num) == num
+
+            verify_reversible(number, 3)
+            verify_reversible(3, number)
+            verify_int(number)
+    """)
+    res = testdir.runpytest()
+    res.assert_outcomes(passed=8, failed=1)
