@@ -1,10 +1,6 @@
 [run]
-omit =
-    env/*
-    */tests/*
-    /etc/python3.7/*
-    /nix/*
-    /run/user/*
+source = src
+branch = on
 
 [report]
 show_missing = True

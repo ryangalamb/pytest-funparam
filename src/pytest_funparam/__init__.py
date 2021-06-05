@@ -15,7 +15,7 @@ from typing import (
 )
 
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     from _pytest.python import Metafunc, FunctionDefinition
     from _pytest.fixtures import FixtureDef
     from _pytest.mark import Mark, MarkDecorator, ParameterSet
