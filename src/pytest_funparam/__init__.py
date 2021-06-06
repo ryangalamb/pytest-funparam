@@ -39,6 +39,7 @@ def grab_mock_fixture_value(
     name2fixturedefs: Dict[str, Sequence["FixtureDef[Any]"]],
 ) -> Union[MagicMock, Any]:
     try:
+        # TODO: can we count on the order of name2fixturedefs?
         *_, fixture_def = name2fixturedefs[fixture_name]
     except KeyError:
         # EARLY RETURN

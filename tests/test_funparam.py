@@ -456,7 +456,7 @@ def test_parametrize_mark(testdir):
 
 def test_clobbering_funparam(testdir):
     """
-    Why would you do this? I don't know. But it's worth knowing about.
+    This is probably a bad idea, but it works!
     """
     testdir.makepyfile("""\
         import pytest
