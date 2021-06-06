@@ -141,14 +141,14 @@ happening.
 Looping over values from a fixture
 ----------------------------------
 
-**This will not work with ``pytest-funparam``.** To determine how many test
+**This will not work with pytest-funparam.** To determine how many test
 cases to generate, ``pytest-funparam`` needs to perform a "dry run" of your
 test case. Because fixtures can be expensive and have side effects,
 ``pytest-funparam`` only looks for places where the ``funparam`` fixture was
 requested.
 
-**If the number of test cases depends on values from fixtures,
-``pytest-funparam`` won't be able to figure it out.**
+**If the number of test cases depends on values from fixtures, pytest-funparam
+won't be able to figure it out.**
 
 .. code-block:: python
 
