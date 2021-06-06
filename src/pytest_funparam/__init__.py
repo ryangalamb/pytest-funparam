@@ -35,7 +35,7 @@ _unrelated_fixture = object()
 
 def grab_mock_fixture_value(
     fixture_name: str,
-    funparam_fixture: "GenerateTestsFunparam",
+    funparam_fixture: "GenerateTestsFunparamFixture",
     name2fixturedefs: Dict[str, Sequence["FixtureDef[Any]"]],
 ) -> Union[MagicMock, Any]:
     try:
@@ -78,7 +78,7 @@ def grab_mock_fixture_value(
 
 def generate_kwargs(
     definition: "FunctionDefinition",
-    funparam_fixture: "GenerateTestsFunparam",
+    funparam_fixture: "GenerateTestsFunparamFixture",
 ) -> Dict[str, Union[MagicMock, Any]]:
     found_values = {}
     fixtureinfo = definition._fixtureinfo
@@ -111,7 +111,7 @@ def pytest_generate_tests(metafunc: "Metafunc") -> None:
 
     # Call the test function with dummy fixtures to see how many times the
     # verify function is called.
-    dryrun_funparam = GenerateTestsFunparam()
+    dryrun_funparam = GenerateTestsFunparamFixture()
 
     try:
         kwargs = generate_kwargs(metafunc.definition, dryrun_funparam)
@@ -141,7 +141,7 @@ class NestedFunparamError(Exception):
     pass
 
 
-class Funparam:
+class FunparamFixture:
     """
     The base API for the `funparam` fixture.
 
@@ -180,7 +180,7 @@ class Funparam:
         return funparam_wrapper
 
 
-class GenerateTestsFunparam(Funparam):
+class GenerateTestsFunparamFixture(FunparamFixture):
     """
     The `funparam` fixture provided to the "dry run" test call during
     `pytest_generate_tests`.
@@ -225,7 +225,7 @@ class GenerateTestsFunparam(Funparam):
         return params
 
 
-class RuntestFunparam(Funparam):
+class RuntestFunparamFixture(FunparamFixture):
     """
     The `funparam` fixture provided to each run of the test function.
 
@@ -264,5 +264,5 @@ class RuntestFunparam(Funparam):
 
 
 @pytest.fixture
-def funparam(_funparam_call_number: int) -> Funparam:
-    return RuntestFunparam(_funparam_call_number)
+def funparam(_funparam_call_number: int) -> FunparamFixture:
+    return RuntestFunparamFixture(_funparam_call_number)

@@ -116,7 +116,7 @@ within another fixture called ``funparam``:
 
     file */pytest_funparam/__init__.py, line *
       @pytest.fixture
-      def funparam(_funparam_call_number: int) -> Funparam:
+      def funparam(_funparam_call_number: int) -> FunparamFixture:
     E       fixture '_funparam_call_number' not found
 
     >       available fixtures: *
