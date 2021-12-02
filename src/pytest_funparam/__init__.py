@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import MagicMock
-from functools import wraps
+from functools import update_wrapper, wraps
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -12,7 +12,12 @@ from typing import (
     Collection,
     Callable,
     Optional,
+    TypeVar,
+    Generic,
 )
+
+
+F = TypeVar('F', bound=Callable[..., None])
 
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -141,6 +146,63 @@ class NestedFunparamError(Exception):
     pass
 
 
+class IdentifiedFunparamFunction(Generic[F]):
+
+    def __init__(
+        self,
+        function: F,
+        *,
+        id: Union[str, None] = None,
+        marks: Collection['MarkDecorator'] = (),
+    ) -> None:
+        self._function = function
+        self._id = id
+        self._marks = marks
+        update_wrapper(self, function)
+
+    __call__: F
+
+    def __call__(self, *args, **kwargs):  # type: ignore
+        return self._function(
+            *args,
+            _id=self._id,
+            _marks=self._marks,
+            **kwargs
+        )
+
+    def marks(
+        self,
+        *marks: 'MarkDecorator'
+    ) -> "IdentifiedFunparamFunction[F]":
+        all_marks = (*self._marks, *marks)
+        return type(self)(
+            self._function,
+            id=self._id,
+            marks=all_marks,
+        )
+
+
+class UnidentifiedFunparamFunction(IdentifiedFunparamFunction[F]):
+
+    def id(self, id_: str) -> "IdentifiedFunparamFunction[F]":
+        return IdentifiedFunparamFunction(
+            self._function,
+            id=id_,
+            marks=self._marks,
+        )
+
+    def __getitem__(self, id_: str) -> "IdentifiedFunparamFunction[F]":
+        return self.id(id_)
+
+    def marks(
+        self,
+        *marks: 'MarkDecorator'
+    ) -> "UnidentifiedFunparamFunction[F]":
+        # HACK: Superclass uses `type(self)` to get class. We don't need to do
+        #       anything special to get the type correct.
+        return super().marks(*marks)  # type: ignore
+
+
 class FunparamFixture:
     """
     The base API for the `funparam` fixture.
@@ -168,8 +230,9 @@ class FunparamFixture:
 
     def __call__(
         self,
-        verify_function: Callable[..., None]
-    ) -> Callable[..., None]:
+        verify_function: F,
+    ) -> UnidentifiedFunparamFunction[F]:
+
         key = self._make_key(verify_function)
         self.verify_functions[key] = verify_function
 
@@ -177,7 +240,7 @@ class FunparamFixture:
         def funparam_wrapper(*args: Any, **kwargs: Any) -> None:
             return self.call_verify_function(key, *args, **kwargs)
 
-        return funparam_wrapper
+        return UnidentifiedFunparamFunction(funparam_wrapper)  # type: ignore
 
 
 class GenerateTestsFunparamFixture(FunparamFixture):

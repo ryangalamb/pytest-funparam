@@ -122,7 +122,7 @@ within another fixture called ``funparam``:
     >       available fixtures: *
     >       use 'pytest --fixtures [testpath]' for help on them.
 
-    */pytest_funparam/__init__.py:266
+    */pytest_funparam/__init__.py:*
     =========================== short test summary info ============================
     ERROR test_quirks.py::test_addition
     =============================== 1 error in 0.02s ===============================

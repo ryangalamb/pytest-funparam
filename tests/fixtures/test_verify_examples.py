@@ -57,3 +57,27 @@ def test_verify_examples_simple(verify_examples):
     )
 
     verify_examples(text)
+
+
+def test_verify_examples_mypy(verify_examples):
+    verify_examples(dedent(
+        """\
+        Given an example:
+
+        .. code-block:: python
+
+            def verify_sum(a: int, b: int, expected: int) -> None:
+                assert a + b == expected
+
+            verify_sum(1, 2, 3)
+            verify_sum("a", "b", "ab")
+
+        ::
+
+            $ mypy
+            test_verify_examples_mypy.py:5: error: Argument 1 to "verify_sum" has incompatible type "str"; expected "int"
+            test_verify_examples_mypy.py:5: error: Argument 2 to "verify_sum" has incompatible type "str"; expected "int"
+            test_verify_examples_mypy.py:5: error: Argument 3 to "verify_sum" has incompatible type "str"; expected "int"
+            Found 3 errors in 1 file (checked 1 source file)
+        """  # noqa
+    ))

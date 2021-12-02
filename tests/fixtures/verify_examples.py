@@ -54,7 +54,7 @@ def extract_blocks(rst_text):
                     continue
                 if (
                     current_type == TYPE_OUTPUT
-                    and not line.strip().startswith("$ pytest")
+                    and not line.strip().startswith("$ ")
                 ):
                     # Not something we care about. ditch it.
                     current_type = None
@@ -94,34 +94,47 @@ def extract_blocks(rst_text):
 
 
 @pytest.fixture
-def verify_one_example(testdir, monkeypatch, capsys):
+def verify_one_example(testdir, monkeypatch, capsys, run_mypy):
     # Use a consistent width for the terminal output.
     monkeypatch.setenv("COLUMNS", "80")
 
-    def verify_one_example(code, *pytest_blocks):
+    def _verify_pytest(args, expected_output):
+        result = testdir.runpytest(*args)
+        expected_lines = expected_output.splitlines()
+        summary, inline, timepart = expected_lines[-1].partition(" in ")
+        # Replace the actual running time with a glob, so the test isn't
+        # dependent on that.
+        timepart = "*" + timepart[timepart.index("s"):]
+
+        expected_lines[-1] = "".join([summary, inline, timepart])
+
+        result.stdout.fnmatch_lines([
+            line
+            for line in expected_lines
+            # Don't match empty lines. Those might be useful for matching.
+            if line.strip() != ""
+        ])
+        capsys.readouterr()
+
+    def _verify_mypy(args, expected_output):
+        stdout, *_ = run_mypy([str(testdir.tmpdir), *args])
+        # Enforce an exact match, since there's not as much output as pytest.
+        assert stdout.rstrip("\n") == expected_output.rstrip("\n")
+
+    def _verify_one_example(code, *shell_blocks):
         testdir.makepyfile(code)
-        for output in pytest_blocks:
+        for output in shell_blocks:
             command_line = output.splitlines()[0]
             cmd_tokens = shlex.split(command_line.lstrip("$ "))
             expected_output = "\n".join(output.splitlines()[1:])
-            result = testdir.runpytest(*cmd_tokens[1:])
-            expected_lines = expected_output.splitlines()
-            summary, inline, timepart = expected_lines[-1].partition(" in ")
-            # Replace the actual running time with a glob, so the test isn't
-            # dependent on that.
-            timepart = "*" + timepart[timepart.index("s"):]
+            if cmd_tokens[0] == 'pytest':
+                _verify_pytest(cmd_tokens[1:], expected_output)
+            elif cmd_tokens[0] == 'mypy':
+                _verify_mypy(cmd_tokens[1:], expected_output)
+            else:
+                pytest.fail(f"Unsupported command: {cmd_tokens[0]}")
 
-            expected_lines[-1] = "".join([summary, inline, timepart])
-
-            result.stdout.fnmatch_lines([
-                line
-                for line in expected_lines
-                # Don't match empty lines. Those might be useful for matching.
-                if line.strip() != ""
-            ])
-            capsys.readouterr()
-
-    return verify_one_example
+    return _verify_one_example
 
 
 @pytest.fixture
@@ -132,16 +145,16 @@ def verify_examples(verify_one_example):
         blocks = extract_blocks(text)
 
         last_python_block = None
-        pytest_blocks = []
+        shell_blocks = []
         for block_type, block_text in blocks:
             if block_type == TYPE_PYTHON:
-                if pytest_blocks:
-                    verify_one_example(last_python_block, *pytest_blocks)
+                if shell_blocks:
+                    verify_one_example(last_python_block, *shell_blocks)
                 last_python_block = block_text
-                pytest_blocks = []
+                shell_blocks = []
                 continue
             if last_python_block is not None:
-                pytest_blocks.append(block_text)
-        if last_python_block and pytest_blocks:
-            verify_one_example(last_python_block, *pytest_blocks)
+                shell_blocks.append(block_text)
+        if last_python_block and shell_blocks:
+            verify_one_example(last_python_block, *shell_blocks)
     return verify_examples

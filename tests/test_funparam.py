@@ -73,8 +73,10 @@ def test_funparam_marks(testdir):
             def verify_sum(a, b, expected):
                 assert a + b == expected
 
+            verify_sum_skipped = verify_sum.marks(pytest.mark.skip)
+
             verify_sum(1, 2, 3)
-            verify_sum(2, 2, 5, _marks=pytest.mark.skip)
+            verify_sum_skipped(2, 2, 5)
             verify_sum(4, 2, 6)
         """
     )
@@ -144,7 +146,7 @@ def test_funparam_ids_default(testdir):
     ]
 
 
-def test_funparam_id_kwarg(testdir):
+def test_funparam_id_attribute(testdir):
     testdir.makepyfile(
         r"""
         def test_addition(funparam):
@@ -152,9 +154,9 @@ def test_funparam_id_kwarg(testdir):
             def verify_sum(a, b, expected):
                 assert a + b == expected
 
-            verify_sum(1, 2, 3, _id="one and two")
-            verify_sum(2, 2, 5, _id="two and two")
-            verify_sum(4, 2, 6, _id="four and two")
+            verify_sum.id("one and two")(1, 2, 3)
+            verify_sum.id("two and two")(2, 2, 5)
+            verify_sum.id("four and two")(4, 2, 6)
         """
     )
     items, _ = testdir.inline_genitems()
